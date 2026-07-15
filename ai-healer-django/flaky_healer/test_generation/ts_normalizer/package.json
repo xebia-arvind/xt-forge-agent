@@ -1,0 +1,16 @@
+{
+  "name": "xt-forge-ts-normalizer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AST-based normalizer sidecar for XT-Forge step-defs and page-objects.",
+  "main": "index.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "test:fixture": "node index.mjs < fixture.example.json"
+  },
+  "dependencies": {
+    "ts-morph": "^24.0.0",
+    "typescript": "^5.5.0"
+  }
+}

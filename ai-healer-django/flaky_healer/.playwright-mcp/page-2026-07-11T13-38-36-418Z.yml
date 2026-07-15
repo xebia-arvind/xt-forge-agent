@@ -1,0 +1,186 @@
+- generic [active] [ref=e1]:
+  - link "Skip to Main Content" [ref=e2]:
+    - /url: "#ccl-mainContainer"
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - region "Notifications Bars"
+      - banner [ref=e7]:
+        - generic [ref=e8]:
+          - link "Carnival Home Page" [ref=e10] [cursor=pointer]:
+            - /url: https://www.carnival.com
+          - navigation [ref=e12]:
+            - list [ref=e13]
+        - button "search" [ref=e14] [cursor=pointer]
+        - button "Log In" [ref=e18] [cursor=pointer]
+    - main [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e27]:
+          - generic [ref=e31] [cursor=pointer]:
+            - img "Save and Sail Semi-Annual Event." [ref=e33]
+            - generic [ref=e34]: More Time To Pay
+            - generic [ref=e35]:
+              - generic [ref=e37]:
+                - generic [ref=e38]: Final Payment Is Due
+                - generic [ref=e39]:
+                  - generic [ref=e40]:
+                    - text: "30"
+                    - superscript [ref=e41]: "*"
+                  - generic [ref=e42]:
+                    - generic [ref=e43]: Days Before
+                    - generic [ref=e44]: You Sail
+              - generic [ref=e45]:
+                - separator [ref=e46]
+                - generic [ref=e47]: +
+                - separator [ref=e48]
+              - generic [ref=e49]:
+                - generic [ref=e50]:
+                  - text: Up to
+                  - superscript [ref=e51]: $
+                  - text: 50 onboard credit
+                - generic [ref=e52]:
+                  - text: Room upgrade from
+                  - superscript [ref=e53]: $
+                  - text: "1"
+                - generic [ref=e54]: 50% off deposits
+            - link "shop this deal. More time to pay, final payment is due 30 days before you sail and up to $50 onboard credit, room upgrade from $1, and 50% off deposits." [ref=e56]: Shop This deal
+          - paragraph [ref=e58]: "*All taxes and fees are included."
+          - generic [ref=e60]:
+            - alert [ref=e61]
+            - generic [ref=e64]:
+              - text:   
+              - generic [ref=e66]:
+                - list [ref=e67]:
+                  - listitem [ref=e68]:
+                    - button "Sail To" [ref=e69] [cursor=pointer]
+                  - listitem [ref=e73]:
+                    - button "Sail From" [ref=e74] [cursor=pointer]
+                  - listitem [ref=e78]:
+                    - button "Dates" [ref=e79] [cursor=pointer]
+                  - listitem [ref=e83]:
+                    - button "Duration" [ref=e84] [cursor=pointer]
+                  - listitem [ref=e88]:
+                    - button [ref=e89] [cursor=pointer]
+                - text:      
+        - text:   
+        - generic [ref=e93]:
+          - text: Big Crew, Big Savings!
+          - generic [ref=e95]:
+            - generic [ref=e97]:
+              - generic [ref=e98]:
+                - text: "3"
+                - superscript [ref=e99]: rd
+                - text: "& 4"
+                - superscript [ref=e100]: th
+                - text: Guests
+              - generic [ref=e101]:
+                - text: Sail Free
+                - superscript [ref=e102]: "**"
+            - generic [ref=e103]: +
+            - generic [ref=e104]:
+              - generic [ref=e105]: up to
+              - generic [ref=e106]:
+                - superscript [ref=e107]: $
+                - generic [ref=e108]: "200"
+              - generic [ref=e109]: onboard credit
+          - link "book now. big crew big savings. 3rd and 4th guests sail free and up to $200 onboard credit" [ref=e110] [cursor=pointer]: book now
+        - paragraph [ref=e112]: "**Terms and conditions apply. Free offer applies to cruise fare only, offered on select sailings, categories and occupancies."
+        - generic [ref=e115]:
+          - text: Book Your Getaway With This Deal
+          - generic [ref=e116]:
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - generic [ref=e120]: save up to
+                - generic [ref=e121]:
+                  - superscript [ref=e122]: $
+                  - generic [ref=e123]: 1,090
+                  - superscript [ref=e124]: "*"
+                - generic [ref=e125]: per room
+              - generic [ref=e126]: +
+              - generic [ref=e127]:
+                - generic [ref=e128]: deposits from
+                - generic [ref=e129]:
+                  - superscript [ref=e130]: $
+                  - generic [ref=e131]: "50"
+                - generic [ref=e132]: per person
+            - generic [ref=e133]:
+              - text: "- Plus Room Upgrade From"
+              - superscript [ref=e134]: $
+              - text: 1 -
+          - link "Shop this deal. Limited-time savings are on now. Cruises from $59 per person, per day." [ref=e135] [cursor=pointer]: Shop This Deal
+      - list [ref=e137]:
+        - listitem [ref=e138]:
+          - link "$300 ONBOARD CREDIT + INTEREST-FREE FINANCING. Apply Now. Opens in a new window." [ref=e139] [cursor=pointer]:
+            - /url: https://cards.barclaycardus.com/banking/credit-card/carnival/mastercard-world/co-brand-partner-site/6dc3c013-0a80-4bc1-bf11-fbe1dc16b780?referrerid=PTRBACLPA
+          - paragraph [ref=e142]:
+            - link "$300 Onboard Credit + Interest-Free Financing" [ref=e143] [cursor=pointer]:
+              - /url: https://cards.barclaycardus.com/banking/credit-card/carnival/mastercard-world/co-brand-partner-site/6dc3c013-0a80-4bc1-bf11-fbe1dc16b780?referrerid=PTRBACLPA
+              - text: $300 Onboard Credit + Interest-Free Financing
+              - generic [ref=e145]:
+                - text: Earn 30,000 FunPoints
+                - superscript [ref=e146]: ®
+                - text: ", redeemable for $300 onboard credit. Plus,enjoy a 6-month 0% promo APR on Carnival Cruise bookings, All with the Carnival"
+                - superscript [ref=e147]: ®
+                - text: World Mastercard
+                - superscript [ref=e148]: ®
+              - text: APPLY NOW
+            - generic [ref=e150]:
+              - text: Earn 30,000 FunPoints
+              - superscript [ref=e151]: ®
+              - text: ", redeemable for $300 onboard credit. Plus,enjoy a 6-month 0% promo APR on Carnival Cruise bookings, All with the Carnival"
+              - superscript [ref=e152]: ®
+              - text: World Mastercard
+              - superscript [ref=e153]: ®
+        - listitem [ref=e154]:
+          - link "2-5 Day Cruises. Shop Now. Opens in new window." [ref=e155] [cursor=pointer]:
+            - /url: /cruise-search?icid=crm_ccl_short_091124_hm_tout_t2_nonbooked_7&dur=D1
+          - paragraph [ref=e158]:
+            - link "2-5 Day Cruises" [ref=e159] [cursor=pointer]:
+              - /url: /cruise-search?icid=crm_ccl_short_091124_hm_tout_t2_nonbooked_7&dur=D1
+              - text: 2-5 Day Cruises
+              - generic [ref=e160]: Get big savings! Check out 2-5 day cruise deals and begin to plan your next adventure.
+              - text: SHOP NOW
+            - generic [ref=e161]: Get big savings! Check out 2-5 day cruise deals and begin to plan your next adventure.
+        - listitem [ref=e162]:
+          - link [ref=e163] [cursor=pointer]:
+            - /url: /cruise-search?ptport=RTB,HMD,CBK&icid=icp_ccl_paradisecollection_051526_hm_t3
+          - paragraph [ref=e166]:
+            - link "Paradise Collection by Carnival" [ref=e167] [cursor=pointer]:
+              - /url: /cruise-search?ptport=RTB,HMD,CBK&icid=icp_ccl_paradisecollection_051526_hm_t3
+              - text: Paradise Collection by Carnival
+              - generic [ref=e168]: From breathtaking, white sand beaches to vibrant cultures and unforgettable excursions, each destination offers a different slice of paradise.
+              - text: SHOP NOW
+            - generic [ref=e169]: From breathtaking, white sand beaches to vibrant cultures and unforgettable excursions, each destination offers a different slice of paradise.
+        - listitem [ref=e170]:
+          - link "Explore Australia Cruises. Learn More. opens in new window." [ref=e171] [cursor=pointer]:
+            - /url: /cruise-search?icid=crm_ccl_australia_091124_hm_tout_t4_nonbooked_7&dest=nz,o,u
+          - paragraph [ref=e174]:
+            - link "Explore Australia Cruises" [ref=e175] [cursor=pointer]:
+              - /url: /cruise-search?icid=crm_ccl_australia_091124_hm_tout_t4_nonbooked_7&dest=nz,o,u
+              - text: Explore Australia Cruises
+              - generic [ref=e176]: Sail from Sydney or Brisbane for Aussie adventures or to exotic South Pacific Islands.
+              - text: LEARN MORE
+            - generic [ref=e177]: Sail from Sydney or Brisbane for Aussie adventures or to exotic South Pacific Islands.
+    - contentinfo [ref=e185]:
+      - generic [ref=e188]:
+        - combobox "Currency Selector" [ref=e190] [cursor=pointer]:
+          - option "$AUD" [selected]
+          - option "$NZD"
+        - combobox "Country Selector" [ref=e205]
+      - generic [ref=e211]:
+        - generic:
+          - list
+      - generic:
+        - generic:
+          - list
+      - generic [ref=e212]:
+        - generic [ref=e214]:
+          - link:
+            - /url: /
+        - generic [ref=e216]:
+          - generic [ref=e217]:
+            - paragraph
+          - generic [ref=e221]:
+            - paragraph
+            - link [ref=e222] [cursor=pointer]:
+              - /url: ""
+  - alert [ref=e223]

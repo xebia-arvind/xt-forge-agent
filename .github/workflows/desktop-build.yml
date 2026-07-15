@@ -1,0 +1,84 @@
+name: Desktop build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop-app/**"
+      - ".github/workflows/desktop-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # ---------- macOS: PyInstaller + .dmg ----------
+      - name: Build (macOS)
+        if: matrix.os == 'macos-latest'
+        run: pyinstaller packaging/pyinstaller_mac.spec
+
+      - name: Install create-dmg (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install create-dmg
+
+      - name: Package .dmg (macOS)
+        if: matrix.os == 'macos-latest'
+        run: bash packaging/build_dmg.sh
+
+      - name: Upload .dmg artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: XT-Forge-macos
+          path: desktop-app/dist/XT-Forge.dmg
+          if-no-files-found: error
+
+      # ---------- Windows: PyInstaller + Inno Setup ----------
+      - name: Install playwright pip package (Windows)
+        if: matrix.os == 'windows-latest'
+        # Bundled inside the .exe so the first-launch bootstrap can invoke
+        # `python -m playwright install chromium`. Not a runtime dep of the
+        # desktop client itself, so it's not in pyproject.toml.
+        run: pip install "playwright>=1.44"
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        run: pyinstaller packaging/pyinstaller_win.spec
+
+      - name: Install Inno Setup (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install innosetup --version=6.2.2 -y
+
+      - name: Package .exe installer (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" packaging\installer.iss
+        shell: pwsh
+
+      - name: Upload .exe artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: XT-Forge-windows
+          path: desktop-app/dist/XT-Forge-Setup.exe
+          if-no-files-found: error

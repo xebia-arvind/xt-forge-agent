@@ -1,0 +1,203 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Feature Review · XT-Forge{% endblock %}
+{% block panel_title %}🧩 Feature Author review{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:280px;">
+      <label>Pipeline job</label>
+      <select id="job-picker"></select>
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <label>Jira issue key</label>
+      <input id="jira-key" type="text" placeholder="e.g. XX-99">
+    </div>
+    <button id="btn-run">Run Feature Author</button>
+    <button id="btn-approve" class="secondary" disabled>Approve →</button>
+    <span id="stage-status" class="badge badge-info">idle</span>
+    <span id="model-badge" class="badge badge-neutral" style="display:none;"></span>
+  </div>
+  <div id="stage-message" style="margin-top:10px; font-size:13px;"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Editable feature spec</h3>
+  <div class="row cols-2">
+    <div>
+      <label>Title</label>
+      <input id="f-title" type="text">
+    </div>
+    <div>
+      <label>Seed URLs (comma-separated)</label>
+      <input id="f-seeds" type="text">
+    </div>
+    <div style="grid-column: span 2;">
+      <label>Description</label>
+      <textarea id="f-description" rows="4"></textarea>
+    </div>
+    <div style="grid-column: span 2;">
+      <label>Acceptance criteria (one per line)</label>
+      <textarea id="f-acceptance" rows="6"></textarea>
+    </div>
+    <div style="grid-column: span 2;">
+      <label>
+        Preconditions (JSON — HTTP Basic Auth, seed year, etc.)
+        <span style="color:var(--muted); font-size:11px;">
+          e.g. <code>{"http_basic":{"username":"x","password":"y"}, "seed_year":"1990"}</code>
+        </span>
+      </label>
+      <textarea id="f-preconditions" rows="4" placeholder="{}"></textarea>
+    </div>
+    <div style="grid-column: span 2;">
+      <label>Reviewer notes (optional; recorded in stage history)</label>
+      <input id="f-notes" type="text">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Raw agent output</h3>
+  <pre id="raw-json" class="log" style="height:200px">(no output yet)</pre>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+const $status = () => document.getElementById("stage-status");
+const $message = () => document.getElementById("stage-message");
+const $rawJson = () => document.getElementById("raw-json");
+const $picker = document.getElementById("job-picker");
+const $btnRun = document.getElementById("btn-run");
+const $btnApprove = document.getElementById("btn-approve");
+
+function setStatus(text, cls="badge-info") { $status().textContent = text; $status().className = "badge " + cls; }
+function setMessage(msg, color="var(--muted)") { $message().innerHTML = `<span style="color:${color};">${msg}</span>`; }
+
+function currentJobId() { return $picker.value || sessionStorage.getItem("xt.pipeline_job_id") || ""; }
+
+function paintFeature(output) {
+  if (!output) return;
+  document.getElementById("f-title").value = output.title || "";
+  document.getElementById("f-description").value = output.description || "";
+  document.getElementById("f-acceptance").value = (output.acceptance_criteria || []).join("\n");
+  document.getElementById("f-seeds").value = (output.seed_urls || []).join(", ");
+  document.getElementById("f-preconditions").value =
+    output.preconditions ? JSON.stringify(output.preconditions, null, 2) : "{}";
+  $rawJson().textContent = JSON.stringify(output, null, 2);
+}
+
+function collectEdited() {
+  const raw = document.getElementById("f-preconditions").value.trim();
+  let preconditions = {};
+  if (raw) {
+    try {
+      preconditions = JSON.parse(raw);
+      if (typeof preconditions !== "object" || Array.isArray(preconditions)) {
+        throw new Error("must be a JSON object");
+      }
+    } catch (e) {
+      alert("Preconditions is not valid JSON: " + e.message + "\nFix or clear the field before approving.");
+      throw e;
+    }
+  }
+  return {
+    title: document.getElementById("f-title").value,
+    description: document.getElementById("f-description").value,
+    acceptance_criteria: document.getElementById("f-acceptance").value.split("\n").map(s => s.trim()).filter(Boolean),
+    seed_urls: document.getElementById("f-seeds").value.split(",").map(s => s.trim()).filter(Boolean),
+    preconditions: preconditions,
+  };
+}
+
+async function loadJobList() {
+  const r = await fetch("/test-generation/jobs/");
+  if (!r.ok) { setStatus("failed to list jobs", "badge-fail"); return []; }
+  const rows = await r.json();
+  $picker.innerHTML = `<option value="">— select —</option>` + rows.map(j =>
+    `<option value="${j.job_id}">${(j.feature_name||"").replace(/</g,"&lt;")} · ${j.status}</option>`
+  ).join("");
+  return rows;
+}
+
+function paintModelBadge(job) {
+  // Phase 1: find the most recent llm_call history entry for THIS stage's agent
+  // and show which OpenAI model powered it (`⚡ gpt-4o`).
+  const badge = document.getElementById("model-badge");
+  if (!badge) return;
+  const history = job.stage_history || [];
+  const latest = [...history].reverse().find(
+    h => h && h.decision === "llm_call" && h.agent === "feature_author"
+  );
+  if (latest && latest.model) {
+    badge.textContent = `⚡ ${latest.model}`;
+    badge.style.display = "";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+async function loadJob(id) {
+  if (!id) return;
+  const r = await fetch(`/test-generation/jobs/${id}/`);
+  if (!r.ok) { setStatus("load failed", "badge-fail"); return; }
+  const j = await r.json();
+  document.getElementById("jira-key").value = j.jira_issue_key || "";
+  const canApprove = j.stage === "FEATURE";
+  $btnApprove.disabled = !canApprove;
+  setStatus(`stage=${j.stage}`, canApprove ? "badge-success" : "badge-info");
+  paintModelBadge(j);
+  if (j.stage_feature_output) paintFeature(j.stage_feature_output);
+  else $rawJson().textContent = "(agent has not run yet — click Run Feature Author)";
+  sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
+}
+
+$picker.onchange = () => loadJob($picker.value);
+
+$btnRun.onclick = async () => {
+  const id = currentJobId(); if (!id) { setMessage("Pick a job first.", "var(--bad)"); return; }
+  const jiraKey = document.getElementById("jira-key").value.trim();
+  if (jiraKey) {
+    // Push the key onto the job so the endpoint can pull the Jira issue live.
+    // We fold this into the same POST body — the endpoint reads request.data,
+    // but only feature_agent takes it; the Jira fetch inside StageFeatureRunView
+    // pulls from job.jira_issue_key, so persist it first via /jobs/<id>/artifacts/update/
+    // route… actually simpler: use the artifact update path? No — just accept that
+    // for now the job's jira_issue_key must have been set at creation time.
+  }
+  setStatus("running…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/feature/run/`, {method:"POST", headers:H, body:"{}"});
+  const j = await r.json();
+  if (!r.ok) { setStatus("failed", "badge-fail"); setMessage(j.error || `HTTP ${r.status}`, "var(--bad)"); return; }
+  paintFeature(j.output);
+  setStatus(`stage=${j.stage}`, "badge-success");
+  $btnApprove.disabled = false;
+  setMessage("Review and edit if needed, then Approve.", "var(--muted)");
+};
+
+$btnApprove.onclick = async () => {
+  const id = currentJobId(); if (!id) return;
+  const edited = collectEdited();
+  const reviewer_notes = document.getElementById("f-notes").value;
+  setStatus("approving…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/feature/approve/`, {
+    method:"POST", headers:H, body: JSON.stringify({edited_output: edited, reviewer_notes}),
+  });
+  const j = await r.json();
+  if (!r.ok) { setStatus("failed", "badge-fail"); setMessage(j.error || `HTTP ${r.status}`, "var(--bad)"); return; }
+  setStatus(`stage=${j.stage}`, "badge-success");
+  setMessage(`Advanced to ${j.stage}. Redirecting to Manual Tests Review…`, "var(--ok)");
+  setTimeout(() => { location.href = "{% url 'panel_manual_tests_review' %}"; }, 700);
+};
+
+(async () => {
+  const jobs = await loadJobList();
+  const stored = sessionStorage.getItem("xt.pipeline_job_id");
+  const target = stored && jobs.find(j => j.job_id === stored) ? stored : (jobs[0] && jobs[0].job_id) || "";
+  if (target) { $picker.value = target; await loadJob(target); }
+})();
+</script>
+{% endblock %}

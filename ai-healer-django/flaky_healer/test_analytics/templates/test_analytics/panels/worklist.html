@@ -1,0 +1,179 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Worklist · XT-Forge{% endblock %}
+{% block panel_title %}🗂 Jira Worklist{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+    <div>
+      <h3 style="margin:0">Jira connection</h3>
+      <p style="margin:6px 0 0; color:var(--muted); font-size:13px;">
+        Read-only status. Credentials are configured by an administrator in Django admin.
+      </p>
+    </div>
+    <span id="conn-status" class="badge badge-info">checking…</span>
+  </div>
+  <div id="conn-summary" style="margin-top:10px; font-size:13px; color:var(--muted);"></div>
+  {% if is_superuser %}
+    <div style="margin-top:12px;">
+      <a href="/admin/integrations_jira/jiraconnection/" class="badge badge-info" style="text-decoration:none;">
+        🛠 Manage Jira connections in admin
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap: 10px; flex-wrap: wrap;">
+    <h3 style="margin:0">Issues</h3>
+    <div style="display:flex; gap:6px; flex:1; min-width: 320px; justify-content:flex-end;">
+      <input id="jql" type="text" style="flex:1; max-width:560px;"
+             placeholder="assignee=currentUser() ORDER BY created DESC">
+      <button id="btn-search">Search</button>
+    </div>
+  </div>
+  <div id="search-status" style="margin-top:8px; font-size:12px; color:var(--muted);"></div>
+  <table id="issues" style="margin-top:8px;">
+    <thead><tr><th>Key</th><th>Summary</th><th>Status</th><th>Priority</th><th></th></tr></thead>
+    <tbody>
+      <tr><td colspan="5" style="color:var(--muted);">Loading issues…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+const DEFAULT_JQL = "assignee=currentUser() ORDER BY created DESC";
+
+const $status = () => document.getElementById("search-status");
+const $body   = () => document.querySelector("#issues tbody");
+
+async function loadConnection() {
+  const s = document.getElementById("conn-status");
+  const summary = document.getElementById("conn-summary");
+  const r = await fetch("/integrations/jira/connection/");
+  if (r.status === 404) {
+    s.textContent="not configured"; s.className="badge badge-warn";
+    summary.textContent = "No Jira connection saved for this client yet. Ask an administrator to add one.";
+    return false;
+  }
+  if (!r.ok) {
+    s.textContent="error"; s.className="badge badge-fail";
+    summary.textContent = "Could not load the Jira connection.";
+    return false;
+  }
+  const d = await r.json();
+  s.textContent = "configured"; s.className="badge badge-success";
+  summary.textContent = `Base URL: ${d.base_url}  ·  Email: ${d.email}${d.display_name ? "  ·  " + d.display_name : ""}`;
+  return true;
+}
+
+function renderIssues(rows) {
+  if (!rows.length) {
+    $body().innerHTML = `<tr><td colspan="5" style="color:var(--muted);">No issues matched this JQL. Try broadening it (e.g. remove <code>assignee=currentUser()</code>).</td></tr>`;
+    return;
+  }
+  $body().innerHTML = rows.map(iss => `
+    <tr>
+      <td><strong>${iss.key}</strong></td>
+      <td>${(iss.fields?.summary||"").replace(/</g,"&lt;")}</td>
+      <td>${iss.fields?.status?.name||""}</td>
+      <td>${iss.fields?.priority?.name||""}</td>
+      <td style="display:flex; gap:6px;">
+        <button data-key="${iss.key}" data-mode="pipeline">🧩 Start pipeline →</button>
+        <button data-key="${iss.key}" data-mode="legacy" class="secondary">Legacy config →</button>
+      </td>
+    </tr>`).join("");
+  // Attach handlers per row.
+  $body().querySelectorAll("button[data-key]").forEach(b => b.onclick = async () => {
+    const key = b.dataset.key;
+    const row = rows.find(r => r.key === key) || {};
+    // Both flows stash the Jira context so panels can render the summary/description.
+    sessionStorage.setItem("xt.selected_jira", key);
+    sessionStorage.setItem("xt.selected_jira_summary", row.fields?.summary || "");
+    sessionStorage.setItem("xt.selected_jira_description", JSON.stringify(row.fields?.description || null));
+
+    if (b.dataset.mode === "pipeline") {
+      // Phase 6 flow: create a pipeline job now, redirect to Feature Review.
+      b.disabled = true; b.textContent = "creating…";
+      let r, bodyText, j = {};
+      try {
+        r = await fetch("/test-generation/pipeline-jobs/", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify({
+            jira_issue_key: key,
+            feature_name: row.fields?.summary || key,
+          }),
+        });
+        // Snapshot the raw body once. If the response is text/html (Django
+        // debug page), still show a truncated head so the operator can see
+        // what really failed instead of a bare `HTTP 500`.
+        bodyText = await r.text();
+        try { j = bodyText ? JSON.parse(bodyText) : {}; } catch { j = {}; }
+      } catch (netErr) {
+        alert("Network error while starting pipeline: " + netErr.message);
+        b.disabled = false; b.textContent = "🧩 Start pipeline →";
+        return;
+      }
+      console.log("[pipeline-jobs]", r.status, j.error ? j : bodyText);
+      if (!r.ok) {
+        const reason = j.error || j.detail || (bodyText || "").slice(0, 400) || `HTTP ${r.status}`;
+        alert("Failed to start pipeline: " + reason);
+        b.disabled = false; b.textContent = "🧩 Start pipeline →";
+        return;
+      }
+      sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
+      location.href = "{% url 'panel_feature_review' %}";
+    } else {
+      // Legacy single-shot flow: fall through to Config panel.
+      location.href = "{% url 'panel_config' %}";
+    }
+  });
+}
+
+async function doSearch(jql) {
+  const q = (jql || DEFAULT_JQL).trim();
+  $status().textContent = "Searching…";
+  $body().innerHTML = `<tr><td colspan="5" style="color:var(--muted);">Loading…</td></tr>`;
+  try {
+    const r = await fetch("/integrations/jira/search/", {
+      method:"POST", headers:H,
+      body: JSON.stringify({jql: q, max_results:25})
+    });
+    const contentType = r.headers.get("Content-Type") || "";
+    const payload = contentType.includes("application/json") ? await r.json() : { raw: await r.text() };
+    console.log("[jira/search]", r.status, payload);
+    if (!r.ok) {
+      const detail = payload.error || payload.detail || payload.raw || `HTTP ${r.status}`;
+      $status().innerHTML = `<span style="color:var(--bad);">Search failed: ${String(detail).slice(0,300)}</span>`;
+      $body().innerHTML = "";
+      return;
+    }
+    const issues = payload.issues || [];
+    $status().textContent = `Found ${issues.length} issue${issues.length===1?"":"s"} · JQL: ${q}`;
+    renderIssues(issues);
+  } catch (e) {
+    console.error(e);
+    $status().innerHTML = `<span style="color:var(--bad);">Request error: ${e.message}</span>`;
+    $body().innerHTML = "";
+  }
+}
+
+document.getElementById("btn-search").addEventListener("click", () => doSearch(document.getElementById("jql").value));
+document.getElementById("jql").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(document.getElementById("jql").value); });
+
+(async () => {
+  const ok = await loadConnection();
+  if (ok) {
+    await doSearch(DEFAULT_JQL);   // fire immediately on mount
+  } else {
+    $body().innerHTML = "";
+    $status().textContent = "";
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+[      55ms] [LOG] CarnivalPageExtensibilityDesktop DesktopHeadTop @ https://www.carnival.com/:8
+[      87ms] [LOG] TypeError: Cannot read properties of null (reading '1')
+    at projectJS (https://cdn.optimizely.com/js/1912722625.js:7023:31)
+    at Object.apply (https://cdn.optimizely.com/js/1912722625.js:1:119762)
+    at Object.initializePlugins (https://cdn.optimizely.com/js/1912722625.js:1:50694)
+    at t (https://cdn.optimizely.com/js/1912722625.js:1:310767)
+    at main (https://cdn.optimizely.com/js/1912722625.js:14476:2293)
+    at https://cdn.optimizely.com/js/1912722625.js:14476:2381
+    at https://cdn.optimizely.com/js/1912722625.js:14476:2469 @ https://cdn.optimizely.com/js/1912722625.js:7026
+[     147ms] [ERROR] Refused to apply style from 'https://www.carnival.com/~/media/Images/celebration-key/fonts/Millik_ttf.ttf' because its MIME type ('application/octet-stream') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ https://www.carnival.com/:0
+[     184ms] [ERROR] Refused to apply style from 'https://www.carnival.com/~/media/Images/celebration-key/fonts/Millik_otf.otf' because its MIME type ('application/octet-stream') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ https://www.carnival.com/:0
+[     184ms] [LOG] CarnivalPageExtensibilityDesktop DesktopHeadBottom @ https://www.carnival.com/:21
+[     242ms] [LOG] Carnival.CruiseSearch2015Switches not found in global scope - using CruiseSearch fail-safe version @ https://www.carnival.com/static-assets/ccl-cruise-search/dist/widget.min.js?v=2026.6.22.1:0
+[     274ms] [LOG] Carnival.Personalizer not ready @ https://www.carnival.com/:373
+[     282ms] [LOG] Call personalizer API. @ https://www.carnival.com/DynamicAssets/personalizer.js?v=2026.6.22.1:426
+[     292ms] [LOG] Carousel loaded. @ https://www.carnival.com/bundles/homepage?v=Fpxk8Wsi_cZ19qWHhbwbgEovPjDIMz6mKg6rLEWkB-w1:703
+[     293ms] [LOG] CarnivalPageExtensibilityDesktop DesktopBodyBottom @ https://www.carnival.com/:517
+[     336ms] [LOG]  @ https://www.carnival.com/static-assets/cclr-footer/dist/standalone/cclr-footer-standalone.js?v=2026.6.22.1:45
+[     361ms] [LOG] /-/media/Images/Footer2022/carnival-is-calling-footer-logo.svg @ https://www.carnival.com/static-assets/cclr-footer/dist/standalone/cclr-footer-standalone.js?v=2026.6.22.1:45
+[     384ms] [LOG] ✅ user cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:725
+[     384ms] [LOG] ✅ tgo cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:725
+[     384ms] [LOG] 🔍 URL Match: null @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:727
+[     384ms] [WARNING] ❌ vifp_number not found in URL @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:727
+[     384ms] [WARNING] 🚫 vifp_number not found anywhere! @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:728
+[     384ms] [LOG] ✅ user cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[     384ms] [LOG] ✅ tgo cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[     384ms] [LOG] ✅ decoded OptanonConsent cookie: isGpcEnabled=0&datestamp=Sat+Jul+11+2026+12:36:21+GMT+0000+(Coordinated+Universal+Time)&version=202604.1.0&browserGpcFlag=0&isDntEnabled=0&isIABGlobal=false&hosts=&consentId=325994ec-e95a-4ae1-beda-ed119d94f198&interactionCount=1&isAnonUser=1&prevHadToken=0&landingPath=NotLandingPage&groups=C0001:1,C0002:1,C0003:1,C0004:1&intType=1&crTime=1783773249235&geolocation=IN;UP&AwaitingReconsent=false @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:731
+[     384ms] [LOG] 🔍 C0002 consent check: true @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:732
+[     384ms] [LOG] ✅ C0002 consent granted, checking vifp_consent sources... @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[     384ms] [LOG] 🔍 URL Match: null @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:735
+[     384ms] [WARNING] ❌ vifp_consent not found in URL @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:735
+[     384ms] [WARNING] 🚫 vifp_consent not found anywhere! @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:736
+[     415ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[     454ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[     684ms] [LOG] Personalizer content loaded. @ https://www.carnival.com/DynamicAssets/personalizer.js?v=2026.6.22.1:162
+[    1196ms] [LOG] checking @ :12
+[    1239ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1243ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1273ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1276ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1316ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1319ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1588ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1591ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1637ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1641ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1753ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1757ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1782ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1786ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1807ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1811ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1834ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1837ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1860ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1864ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1886ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1889ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1909ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1913ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1933ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1937ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1960ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1964ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    1994ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    1997ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    2019ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    2022ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208
+[    2046ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    2050ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208

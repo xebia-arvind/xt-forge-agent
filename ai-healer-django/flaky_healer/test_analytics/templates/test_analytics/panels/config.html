@@ -1,0 +1,120 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Config · XT-Forge{% endblock %}
+{% block panel_title %}🧪 Feature config{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="row cols-2">
+    <div>
+      <label>Selected Jira key (from Worklist)</label>
+      <input id="jira-key" type="text" placeholder="e.g. XX-101">
+    </div>
+    <div>
+      <label>Feature name</label>
+      <input id="feature-name" type="text" placeholder="e.g. Login flow">
+    </div>
+    <div style="grid-column: span 2;">
+      <label>Feature description</label>
+      <textarea id="feature-desc" rows="4"
+                placeholder="A user should be able to log in from the homepage..."></textarea>
+    </div>
+    <div>
+      <label>Seed URLs (comma-separated)</label>
+      <input id="seed-urls" type="text" value="/, /login">
+    </div>
+    <div>
+      <label>Base URL</label>
+      <input id="base-url" type="url" value="https://www.carnival.com">
+    </div>
+    <div>
+      <label>Coverage mode</label>
+      <select id="coverage-mode">
+        <option value="SMOKE_NEGATIVE">SMOKE_NEGATIVE</option>
+      </select>
+    </div>
+    <div>
+      <label>Max scenarios / routes</label>
+      <input id="max-both" type="text" value="2 / 5" placeholder="scenarios / routes">
+    </div>
+    <div style="grid-column: span 2;">
+      <label>Intent hints (one per line — used by the LLM to shape scenarios)</label>
+      <textarea id="intent-hints" rows="6"
+                placeholder="Click top-right Login&#10;Enter email …&#10;Enter password Test@123&#10;Verify user is logged in"></textarea>
+    </div>
+    <div style="grid-column: span 2; display:flex; gap:10px; align-items:center;">
+      <button id="btn-save">Save & continue →</button>
+      <span id="save-status" class="badge badge-info">draft</span>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+// ---- Pre-fill from Worklist selection ---------------------------------------
+const jiraKey = sessionStorage.getItem("xt.selected_jira") || "";
+const jiraSummary = sessionStorage.getItem("xt.selected_jira_summary") || "";
+const jiraDescRaw = sessionStorage.getItem("xt.selected_jira_description") || "null";
+
+function adfToPlainText(node) {
+  // Atlassian ADF → best-effort text. Walks the tree, joining text nodes.
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  if (node.type === "text") return node.text || "";
+  const inner = (node.content || []).map(adfToPlainText).join("");
+  // Paragraph / heading nodes gain a trailing newline for readability.
+  if (["paragraph", "heading", "listItem", "hardBreak"].includes(node.type)) {
+    return inner + "\n";
+  }
+  return inner;
+}
+
+let descText = "";
+try { descText = adfToPlainText(JSON.parse(jiraDescRaw)).trim(); } catch (e) { descText = ""; }
+
+document.getElementById("jira-key").value = jiraKey;
+document.getElementById("feature-name").value = jiraSummary;
+document.getElementById("feature-desc").value = descText;
+
+// Also pre-fill a config saved earlier in the same session (browser refresh
+// should not blow away in-flight edits).
+const savedDoc = JSON.parse(sessionStorage.getItem("xt.job_doc") || "null");
+if (savedDoc && !jiraSummary) {
+  document.getElementById("feature-name").value = savedDoc.feature_name || "";
+  document.getElementById("feature-desc").value = savedDoc.feature_description || "";
+  document.getElementById("seed-urls").value = (savedDoc.seed_urls || []).join(", ");
+  document.getElementById("base-url").value = savedDoc.base_url || "";
+  document.getElementById("max-both").value = `${savedDoc.max_scenarios||2} / ${savedDoc.max_routes||5}`;
+  document.getElementById("intent-hints").value = (savedDoc.intent_hints || []).join("\n");
+}
+
+// ---- Save --------------------------------------------------------------------
+document.getElementById("btn-save").onclick = () => {
+  const status = document.getElementById("save-status");
+  const key = document.getElementById("jira-key").value.trim();
+  const nameOnly = document.getElementById("feature-name").value.trim();
+  const featureName = key && nameOnly ? `${key}: ${nameOnly}` : (key || nameOnly);
+  if (!featureName) {
+    status.textContent = "feature name required";
+    status.className = "badge badge-fail";
+    return;
+  }
+  const mx = document.getElementById("max-both").value.split("/").map(x => parseInt(x.trim()||"0",10));
+  const doc = {
+    feature_name: featureName,
+    feature_description: document.getElementById("feature-desc").value,
+    seed_urls: document.getElementById("seed-urls").value.split(",").map(s=>s.trim()).filter(Boolean),
+    coverage_mode: document.getElementById("coverage-mode").value,
+    max_scenarios: mx[0] || 2,
+    max_routes: mx[1] || 5,
+    base_url: document.getElementById("base-url").value,
+    intent_hints: document.getElementById("intent-hints").value.split("\n").map(s=>s.trim()).filter(Boolean),
+    created_by: "dashboard",
+  };
+  sessionStorage.setItem("xt.job_doc", JSON.stringify(doc));
+  status.textContent = "saved to session";
+  status.className = "badge badge-success";
+  setTimeout(() => location.href = "{% url 'panel_generate' %}", 400);
+};
+</script>
+{% endblock %}

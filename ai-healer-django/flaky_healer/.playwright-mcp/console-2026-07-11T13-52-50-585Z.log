@@ -1,0 +1,37 @@
+[      52ms] [LOG] CarnivalPageExtensibilityDesktop DesktopHeadTop @ https://www.carnival.com/:8
+[      78ms] [LOG] TypeError: Cannot read properties of null (reading '1')
+    at projectJS (https://cdn.optimizely.com/js/1912722625.js:7023:31)
+    at Object.apply (https://cdn.optimizely.com/js/1912722625.js:1:119762)
+    at Object.initializePlugins (https://cdn.optimizely.com/js/1912722625.js:1:50694)
+    at t (https://cdn.optimizely.com/js/1912722625.js:1:310767)
+    at main (https://cdn.optimizely.com/js/1912722625.js:14476:2293)
+    at https://cdn.optimizely.com/js/1912722625.js:14476:2381
+    at https://cdn.optimizely.com/js/1912722625.js:14476:2469 @ https://cdn.optimizely.com/js/1912722625.js:7026
+[    5246ms] Uncaught (in promise) Error: Poll timed out
+    at o (https://cdn.optimizely.com/js/1912722625.js:0:191907)
+    at <anonymous> (https://cdn.optimizely.com/js/1912722625.js:0:118462)
+[    6137ms] [ERROR] Refused to apply style from 'https://www.carnival.com/~/media/Images/celebration-key/fonts/Millik_ttf.ttf' because its MIME type ('application/octet-stream') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ https://www.carnival.com/:0
+[    6155ms] [ERROR] Refused to apply style from 'https://www.carnival.com/~/media/Images/celebration-key/fonts/Millik_otf.otf' because its MIME type ('application/octet-stream') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ https://www.carnival.com/:0
+[    6155ms] [LOG] CarnivalPageExtensibilityDesktop DesktopHeadBottom @ https://www.carnival.com/:21
+[    6378ms] [LOG] Carnival.CruiseSearch2015Switches not found in global scope - using CruiseSearch fail-safe version @ https://www.carnival.com/static-assets/ccl-cruise-search/dist/widget.min.js?v=2026.6.22.1:0
+[    6405ms] [LOG] Carnival.Personalizer not ready @ https://www.carnival.com/:373
+[    6411ms] [LOG] Call personalizer API. @ https://www.carnival.com/DynamicAssets/personalizer.js?v=2026.6.22.1:426
+[    6411ms] [LOG] Carousel loaded. @ https://www.carnival.com/bundles/homepage?v=Fpxk8Wsi_cZ19qWHhbwbgEovPjDIMz6mKg6rLEWkB-w1:703
+[    6411ms] [LOG] CarnivalPageExtensibilityDesktop DesktopBodyBottom @ https://www.carnival.com/:517
+[    6437ms] [LOG] ✅ user cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:725
+[    6437ms] [LOG] ✅ tgo cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:725
+[    6437ms] [LOG] 🔍 URL Match: null @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:727
+[    6437ms] [WARNING] ❌ vifp_number not found in URL @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:727
+[    6437ms] [WARNING] 🚫 vifp_number not found anywhere! @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:728
+[    6438ms] [LOG] ✅ user cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[    6438ms] [LOG] ✅ tgo cookie raw: undefined @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[    6438ms] [LOG] ✅ decoded OptanonConsent cookie: isGpcEnabled=0&datestamp=Sat+Jul+11+2026+13:52:06+GMT+0000+(Coordinated+Universal+Time)&version=202604.1.0&browserGpcFlag=0&isDntEnabled=0&isIABGlobal=false&hosts=&consentId=325994ec-e95a-4ae1-beda-ed119d94f198&interactionCount=1&isAnonUser=1&prevHadToken=0&landingPath=NotLandingPage&groups=C0001:1,C0002:1,C0003:1,C0004:1&intType=1&crTime=1783773249235&geolocation=IN;UP&AwaitingReconsent=false @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:731
+[    6438ms] [LOG] 🔍 C0002 consent check: true @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:732
+[    6438ms] [LOG] ✅ C0002 consent granted, checking vifp_consent sources... @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:733
+[    6438ms] [LOG] 🔍 URL Match: null @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:735
+[    6438ms] [WARNING] ❌ vifp_consent not found in URL @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:735
+[    6438ms] [WARNING] 🚫 vifp_consent not found anywhere! @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:736
+[    6463ms] [LOG]  @ https://www.carnival.com/static-assets/cclr-footer/dist/standalone/cclr-footer-standalone.js?v=2026.6.22.1:45
+[    6497ms] [LOG] /-/media/Images/Footer2022/carnival-is-calling-footer-logo.svg @ https://www.carnival.com/static-assets/cclr-footer/dist/standalone/cclr-footer-standalone.js?v=2026.6.22.1:45
+[    6546ms] [LOG] Last Page Visited Ext @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.js:218
+[    6603ms] [LOG] user_status_new: returner @ https://tags.tiqcdn.com/utag/ccl/main/prod/utag.3021.js?utv=ut4.54.202607091547:208

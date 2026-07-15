@@ -1,0 +1,431 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Jobs · XT-Forge{% endblock %}
+{% block panel_title %}📈 Jobs Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Phase 6.3 — Jobs dashboard styling. Extends the shared palette from
+     _layout.html. All colors derive from --ok / --bad / --warn / --blue
+     so light/dark theme swaps stay consistent. */
+  .jobs-summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .jobs-summary .badge { font-size: 13px; padding: 6px 10px; }
+
+  .jobs-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .jobs-filters select, .jobs-filters input {
+    padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;
+  }
+  .jobs-filters label { font-size: 12px; color: var(--muted); }
+
+  /* Stage-pill row: F ▸ M ▸ P ▸ A ▸ E ▸ R ▸ D
+     Each pill is a small colored circle with the stage letter.
+     - passed stage  → --ok (green)
+     - current stage → --blue (in progress)
+     - failed stage  → --bad (red)
+     - future stage  → --line (grey) */
+  .stage-pills { display: inline-flex; gap: 2px; align-items: center; }
+  .stage-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 11px; font-weight: 700; color: white;
+    background: var(--line);
+  }
+  .stage-pill.done    { background: var(--ok); }
+  .stage-pill.current { background: var(--blue); }
+  .stage-pill.failed  { background: var(--bad); }
+  .stage-pill.future  { background: #e5e7eb; color: #94a3b8; }
+  .stage-sep { color: var(--line); font-size: 10px; margin: 0 1px; }
+
+  .job-row td { vertical-align: middle; }
+  .job-row .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  .job-row .actions button {
+    padding: 4px 8px; font-size: 12px; border-radius: 4px;
+    border: 1px solid var(--line); background: white; color: var(--ink);
+    cursor: pointer;
+  }
+  .job-row .actions button:hover:not(:disabled) { background: var(--blue-soft); border-color: var(--blue); }
+  .job-row .actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .job-row .actions button.primary { background: var(--blue); color: white; border-color: var(--blue); }
+  .job-row .actions button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+  .jira-link { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .jira-link:hover { text-decoration: underline; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; padding: 10px 16px;
+    border-radius: 6px; font-size: 13px; color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;
+    max-width: 400px;
+  }
+  .toast.success { background: var(--ok); }
+  .toast.error   { background: var(--bad); }
+  .toast.info    { background: var(--blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="jobs-summary" id="jobs-summary">
+    <span class="badge badge-info">Loading…</span>
+  </div>
+
+  <div class="jobs-filters">
+    <label for="filter-stage">Stage:</label>
+    <select id="filter-stage">
+      <option value="">All</option>
+      <option value="FEATURE">Feature</option>
+      <option value="MANUAL_TESTS">Manual tests</option>
+      <option value="PLAN">Plan</option>
+      <option value="ARTIFACTS">Artifacts</option>
+      <option value="EXECUTE">Execute</option>
+      <option value="REPORT">Report</option>
+      <option value="DONE">Done</option>
+      <option value="HUMAN_REVIEW_NEEDED">Human review</option>
+    </select>
+
+    <label for="filter-state">State:</label>
+    <select id="filter-state">
+      <option value="">All</option>
+      <option value="GREEN">Green</option>
+      <option value="RED">Red</option>
+      <option value="HUMAN_REVIEW_NEEDED">Needs review</option>
+      <option value="IN_PROGRESS">In progress</option>
+    </select>
+
+    <input id="filter-search" type="text" placeholder="Search feature or Jira key…" style="flex:1; min-width: 200px;" />
+
+    <button id="btn-refresh" title="Refresh now">↻ Refresh</button>
+    <label style="margin-left:auto;">
+      <input type="checkbox" id="autorefresh-toggle" checked />
+      Auto-refresh (10s)
+    </label>
+  </div>
+
+  <table id="jobs-table" style="margin-top: 4px;">
+    <thead>
+      <tr>
+        <th style="width: 110px;">Jira</th>
+        <th>Feature</th>
+        <th style="width: 220px;">Stage progression</th>
+        <th style="width: 100px;">Iterations</th>
+        <th style="width: 140px;">Last run</th>
+        <th style="width: 220px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="jobs-tbody">
+      <tr><td colspan="6" style="color: var(--muted); padding: 20px; text-align: center;">Loading jobs…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="toast-slot"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Phase 6.3 — Jobs dashboard behavior.
+//
+// Data flow:
+//   1. Fetch /test-generation/jobs/ (list; one row per job for the active tenant).
+//   2. For each job, fetch /test-generation/jobs/<id>/ for the full detail
+//      (stage_execute_output, execute_iteration, jira_issue_key, stage_history).
+//   3. Render into #jobs-tbody. Auto-refresh every 10s when the toggle is on.
+//   4. Row actions POST to existing endpoints:
+//      - Re-run:      /test-generation/jobs/<id>/stage/execute/run/
+//      - Push:        /test-generation/jobs/<id>/stage/execute/approve/
+//      - Open:        deep-link to the correct stage-review panel.
+
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+const STAGE_ORDER = [
+  {code: "FEATURE",      letter: "F", label: "Feature"},
+  {code: "MANUAL_TESTS", letter: "M", label: "Manual tests"},
+  {code: "PLAN",         letter: "P", label: "Plan"},
+  {code: "ARTIFACTS",    letter: "A", label: "Artifacts"},
+  {code: "EXECUTE",      letter: "E", label: "Execute"},
+  {code: "REPORT",       letter: "R", label: "Report"},
+  {code: "DONE",         letter: "D", label: "Done"},
+];
+
+const STAGE_TO_PANEL = {
+  FEATURE:            "/test-analytics/feature-review/",
+  MANUAL_TESTS:       "/test-analytics/manual-tests-review/",
+  PLAN:               "/test-analytics/plan-review/",
+  ARTIFACTS:          "/test-analytics/review/",
+  EXECUTE:            "/test-analytics/execute/",
+  REPORT:             "/test-analytics/execute/",
+  DONE:               "/test-analytics/execute/",
+  HUMAN_REVIEW_NEEDED:"/test-analytics/execute/",
+};
+
+let allJobs = [];       // detailed job list, refreshed periodically
+let refreshTimer = null;
+
+function toast(message, kind = "info") {
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.textContent = message;
+  document.getElementById("toast-slot").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function stageIndex(stage) {
+  const idx = STAGE_ORDER.findIndex(s => s.code === stage);
+  return idx;
+}
+
+function jobDerivedState(job) {
+  // Convert (stage, final_state) into a display state.
+  //   GREEN  → done+passed  (either stage=DONE OR final_state=GREEN)
+  //   RED    → needs attention
+  //   IN_PROGRESS / HUMAN_REVIEW_NEEDED / OTHER
+  const stage = job.stage || "";
+  const finalState = ((job.stage_execute_output || {}).final_state || "").toUpperCase();
+  if (finalState === "GREEN")       return "GREEN";
+  if (stage === "HUMAN_REVIEW_NEEDED" || finalState === "HUMAN_REVIEW_NEEDED") return "HUMAN_REVIEW_NEEDED";
+  if (finalState === "RED" || finalState === "STUCK_CONVERGED") return "RED";
+  if (["EXECUTE","ARTIFACTS","PLAN","MANUAL_TESTS","FEATURE"].includes(stage)) return "IN_PROGRESS";
+  if (stage === "DONE" || stage === "REPORT") return "GREEN";
+  return "IN_PROGRESS";
+}
+
+function renderStagePills(job) {
+  const currentIdx = stageIndex(job.stage);
+  const finalState = ((job.stage_execute_output || {}).final_state || "").toUpperCase();
+  const isRed = finalState === "RED" || finalState === "STUCK_CONVERGED"
+              || job.stage === "HUMAN_REVIEW_NEEDED";
+
+  const pills = STAGE_ORDER.map((s, i) => {
+    let cls = "future";
+    if (currentIdx < 0) {
+      // Unknown stage — dim all.
+    } else if (i < currentIdx) {
+      cls = "done";
+    } else if (i === currentIdx) {
+      cls = isRed ? "failed" : "current";
+    }
+    // Special case: DONE means every stage completed.
+    if (job.stage === "DONE") cls = "done";
+    return `<span class="stage-pill ${cls}" title="${s.label}">${s.letter}</span>`;
+  });
+  return `<div class="stage-pills">${pills.join('<span class="stage-sep">▸</span>')}</div>`;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return "just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return d.toLocaleDateString();
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
+function jiraLink(issueKey) {
+  if (!issueKey) return "—";
+  return `<span class="jira-link">${issueKey}</span>`;
+}
+
+function renderRow(job) {
+  const stage = job.stage || "";
+  const finalState = ((job.stage_execute_output || {}).final_state || "").toUpperCase();
+  const derived = jobDerivedState(job);
+  const canRerun = ["EXECUTE","HUMAN_REVIEW_NEEDED","REPORT","DONE"].includes(stage);
+  const canPush  = finalState === "GREEN" && !!job.jira_issue_key;
+
+  // Phase 6.5.3 — Context-aware re-run button. On GREEN+DONE/REPORT
+  // jobs the server infers smoke_mode=True (fast: 1 Cucumber run, no
+  // LLM). On RED / HUMAN_REVIEW_NEEDED the same endpoint enters the
+  // full heal loop. Label the button accordingly so operators know
+  // what they're about to trigger.
+  const willBeSmoke = (finalState === "GREEN") && (stage === "REPORT" || stage === "DONE");
+  const runBtnLabel = willBeSmoke ? "▶ Run smoke" : "▶ Heal & retry";
+  const runBtnTitle = willBeSmoke
+    ? "Re-run existing Cucumber test as-is (no LLM). Fails if the UI has changed."
+    : "Kick a full LLM-assisted repair loop.";
+  const runBtnClass = willBeSmoke ? "primary" : "";
+
+  const iters = job.execute_iteration ?? 0;
+  const iterations = (job.stage_execute_output || {}).iterations || [];
+  const iterText = iterations.length > 0 ? `${iters || iterations.length}` : "—";
+
+  const lastRun = fmtDate(job.last_modified || job.created_on);
+  const panelHref = STAGE_TO_PANEL[stage] || "/test-analytics/execute/";
+
+  return `
+    <tr class="job-row" data-job-id="${job.job_id}" data-derived="${derived}" data-stage="${stage}">
+      <td>${jiraLink(job.jira_issue_key || "")}</td>
+      <td>
+        <div style="font-weight:500;">${(job.feature_name || "(unnamed)").replace(/</g,"&lt;")}</div>
+        <div style="font-size:11px; color:var(--muted); font-family: ui-monospace, monospace;">${(job.job_id || "").slice(0,8)}</div>
+      </td>
+      <td>${renderStagePills(job)}</td>
+      <td style="text-align:center;">
+        <span class="badge ${derived === 'GREEN' ? 'badge-success'
+                          : derived === 'RED' ? 'badge-fail'
+                          : derived === 'HUMAN_REVIEW_NEEDED' ? 'badge-warn'
+                          : 'badge-info'}">${iterText}</span>
+      </td>
+      <td style="font-size: 12px; color: var(--muted);">${lastRun}</td>
+      <td>
+        <div class="actions">
+          <button ${canRerun ? `class="${runBtnClass}"` : 'disabled title="Available after job reaches Execute"'}
+                  onclick="rerun('${job.job_id}', ${willBeSmoke})"
+                  title="${runBtnTitle}">${runBtnLabel}</button>
+          <button ${canPush ? 'class="primary"' : 'disabled title="Available when GREEN + linked to Jira"'} onclick="pushToJira('${job.job_id}')" title="Push report to Jira">🚀 Push</button>
+          <a href="${panelHref}"><button title="Open in stage panel">🔎 Open</button></a>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function renderSummary(jobs) {
+  const total = jobs.length;
+  const green = jobs.filter(j => jobDerivedState(j) === "GREEN").length;
+  const red   = jobs.filter(j => jobDerivedState(j) === "RED").length;
+  const review = jobs.filter(j => jobDerivedState(j) === "HUMAN_REVIEW_NEEDED").length;
+  const inProg = jobs.filter(j => jobDerivedState(j) === "IN_PROGRESS").length;
+
+  document.getElementById("jobs-summary").innerHTML = `
+    <span class="badge">Total: ${total}</span>
+    <span class="badge badge-success">🟢 Green: ${green}</span>
+    <span class="badge badge-fail">🔴 Red: ${red}</span>
+    <span class="badge badge-warn">👤 Review: ${review}</span>
+    <span class="badge badge-info">⚙ In progress: ${inProg}</span>
+  `;
+}
+
+function applyFilters() {
+  const stageFilter = document.getElementById("filter-stage").value;
+  const stateFilter = document.getElementById("filter-state").value;
+  const search = (document.getElementById("filter-search").value || "").toLowerCase().trim();
+
+  const filtered = allJobs.filter(j => {
+    if (stageFilter && j.stage !== stageFilter) return false;
+    if (stateFilter && jobDerivedState(j) !== stateFilter) return false;
+    if (search) {
+      const hay = ((j.feature_name || "") + " " + (j.jira_issue_key || "") + " " + (j.job_id || "")).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById("jobs-tbody");
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--muted); padding:20px; text-align:center;">No jobs match the current filters.</td></tr>`;
+  } else {
+    tbody.innerHTML = filtered.map(renderRow).join("");
+  }
+  renderSummary(allJobs);
+}
+
+async function loadJobs() {
+  const listResp = await fetch("/test-generation/jobs/");
+  if (!listResp.ok) {
+    document.getElementById("jobs-tbody").innerHTML = `<tr><td colspan="6" style="color:var(--bad); padding:20px; text-align:center;">Failed to load jobs (HTTP ${listResp.status}). Are you logged in?</td></tr>`;
+    return;
+  }
+  const rows = await listResp.json();
+  // The list endpoint returns pipeline jobs. For each, fetch the detail so
+  // we get stage + final_state + execute_iteration + jira_issue_key.
+  // Parallel fetches; cap at 40 to keep the browser happy.
+  const details = await Promise.all(
+    rows.slice(0, 200).map(async j => {
+      try {
+        const r = await fetch(`/test-generation/jobs/${j.job_id}/`);
+        if (!r.ok) return j;
+        const detail = await r.json();
+        // Merge — detail carries the richer fields.
+        return { ...j, ...detail };
+      } catch {
+        return j;
+      }
+    })
+  );
+  allJobs = details;
+  applyFilters();
+}
+
+async function rerun(jobId, willBeSmoke) {
+  // Phase 6.5.3 — Smoke runs are lightweight (1 Cucumber run, no LLM) so
+  // they shouldn't need a confirmation prompt. Heal runs DO wipe prior
+  // iterations, so we keep the confirmation there. Prior runs are
+  // archived into `previous_runs[]` either way (Phase 6.5.2).
+  if (!willBeSmoke) {
+    if (!confirm("Kick a full LLM-assisted repair loop? Current iterations will be archived to run history.")) return;
+  }
+  toast(willBeSmoke ? "Running smoke test…" : "Enqueuing heal loop…", "info");
+  const r = await fetch(`/test-generation/jobs/${jobId}/stage/execute/run/`, {method: "POST", headers: H, body: "{}"});
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) {
+    const mode = j.smoke_mode ? "Smoke run" : "Heal loop";
+    toast(`${mode} enqueued. Refreshing…`, "success");
+    setTimeout(loadJobs, 500);
+  } else {
+    toast(`Re-run failed: ${j.error || `HTTP ${r.status}`}`, "error");
+  }
+}
+
+async function pushToJira(jobId) {
+  toast("Pushing report to Jira…", "info");
+  const r = await fetch(`/test-generation/jobs/${jobId}/stage/execute/approve/`, {method: "POST", headers: H, body: "{}"});
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) {
+    const issue = j.jira_issue_key || "the ticket";
+    toast(`Report posted to ${issue}. Headline: ${j.headline || ""}`.slice(0, 200), "success");
+    setTimeout(loadJobs, 500);
+  } else {
+    toast(`Push failed: ${j.error || `HTTP ${r.status}`}`, "error");
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(() => {
+    // Only refresh when the toggle is on AND at least one job is in progress.
+    const on = document.getElementById("autorefresh-toggle").checked;
+    if (!on) return;
+    const hasInProgress = allJobs.some(j => jobDerivedState(j) === "IN_PROGRESS");
+    if (hasInProgress) loadJobs();
+  }, 10000);
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+// Wire up controls.
+document.getElementById("filter-stage").addEventListener("change", applyFilters);
+document.getElementById("filter-state").addEventListener("change", applyFilters);
+document.getElementById("filter-search").addEventListener("input", applyFilters);
+document.getElementById("btn-refresh").addEventListener("click", loadJobs);
+document.getElementById("autorefresh-toggle").addEventListener("change", (e) => {
+  if (e.target.checked) startAutoRefresh(); else stopAutoRefresh();
+});
+
+// Initial load + start polling.
+loadJobs();
+startAutoRefresh();
+
+// Deep-link support: /test-analytics/jobs/#<job_id> scrolls the row into view.
+window.addEventListener("hashchange", scrollToHash);
+window.addEventListener("DOMContentLoaded", () => setTimeout(scrollToHash, 200));
+function scrollToHash() {
+  const hash = window.location.hash.replace("#", "");
+  if (!hash) return;
+  const row = document.querySelector(`[data-job-id="${hash}"]`);
+  if (row) {
+    row.scrollIntoView({behavior: "smooth", block: "center"});
+    row.style.background = "var(--blue-soft)";
+    setTimeout(() => row.style.background = "", 2000);
+  }
+}
+</script>
+{% endblock %}

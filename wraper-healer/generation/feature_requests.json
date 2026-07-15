@@ -1,0 +1,105 @@
+{
+  "backend_url": "http://127.0.0.1:8000",
+  "base_url": "https://www.carnival.com/",
+  "created_by": "manual-file-runner",
+  "jobs": [
+    {
+      "feature_name": "XX-96: The Smooth Sail & The Failed Attempt",
+      "feature_description": "The Smooth Sail & The Failed Attempt",
+      "seed_urls": [
+        "/",
+        "/login"
+      ],
+      "coverage_mode": "SMOKE_NEGATIVE",
+      "max_scenarios": 2,
+      "max_routes": 5,
+      "intent_hints": [
+        "Handle AGREE consent if visible",
+        "Click top-right Login",
+        "Enter email ceuttoidiyoumoi-5770@yopmail.com",
+        "Enter password Test@123",
+        "Submit login form",
+        "Verify user is logged in"
+      ],
+      "scenarios": [
+        {
+          "title": "Valid user can login successfully from homepage login popup",
+          "type": "SMOKE",
+          "steps": [
+            {
+              "action": "If consent banner appears, click ACCEPT ALL",
+              "selector": "button:has-text(\"ACCEPT ALL\")",
+              "intent_key": "homepage_agree_cta"
+            },
+            {
+              "action": "Click Log In button from top-right header",
+              "selector": "#loginButton",
+              "intent_key": "homepage_signin_cta"
+            },
+            {
+              "action": "Enter email id",
+              "selector": "#username",
+              "intent_key": "generic",
+              "value": "ceuttoidiyoumoi-5770@yopmail.com"
+            },
+            {
+              "action": "Enter password",
+              "selector": "#password",
+              "intent_key": "generic",
+              "value": "Test@123"
+            },
+            {
+              "action": "Click Log In button to submit",
+              "selector": "button[type=\"submit\"]",
+              "intent_key": "generic"
+            }
+          ],
+          "assertions": [
+            "User should be logged in successfully",
+            "Logged-in user greeting or account menu should be visible",
+            "No login error message should be visible"
+          ]
+        },
+        {
+          "title": "Login fails with invalid email",
+          "type": "NEGATIVE",
+          "steps": [
+            {
+              "action": "If consent banner appears, click ACCEPT ALL",
+              "selector": "button:has-text(\"ACCEPT ALL\")",
+              "intent_key": "homepage_agree_cta"
+            },
+            {
+              "action": "Click Log In button from top-right header",
+              "selector": "#loginButton",
+              "intent_key": "homepage_signin_cta"
+            },
+            {
+              "action": "Enter email id",
+              "selector": "#username",
+              "intent_key": "generic",
+              "value": "test123@yopmail.com"
+            },
+            {
+              "action": "Enter password",
+              "selector": "#password",
+              "intent_key": "generic",
+              "value": "Test@123"
+            },
+            {
+              "action": "Click Log In button to submit",
+              "selector": "button[type=\"submit\"]",
+              "intent_key": "generic"
+            }
+          ],
+          "assertions": [
+            "User should NOT be logged in",
+            "Error message should be displayed: We couldn't find your account or similar",
+            "Login popup should remain open",
+            "No account menu or greeting should be visible"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+    "text_patterns": [
+        "^\\$?[0-9,.]+$",
+        "^[0-9]+$",
+        "\\b\\d{2}:\\d{2}(:\\d{2})?\\b",
+        "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b"
+    ],
+    "ignore_tags": [
+        "TD"
+    ],
+    "ignore_classes": [
+        "badge",
+        "counter",
+        "timestamp"
+    ],
+    "ignore_attributes": [
+        "data-dynamic",
+        "data-counter"
+    ],
+    "ignore_inside_tags": [
+        "TBODY"
+    ],
+    "ignore_if": {
+        "only_text_changed": true
+    },
+    "heuristics_enabled": true,
+    "learning_enabled": true,
+    "learning": {
+        "min_runs_before_learning": 3,
+        "change_frequency_threshold": 0.6
+    }
+}

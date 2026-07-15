@@ -1,0 +1,26 @@
+{
+  "name": "playwright-carnival-framework",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:login": "HEADLESS=false npx playwright test -g 'Carnival Login Feature' ",
+    "test:headed": "HEADLESS=false npx playwright test",
+    "test:headless": "HEADLESS=true npx playwright test",
+    "report": "npx playwright show-report",
+    "gen:testcases": "node wraper-healer/runGenerationFromFile.mjs",
+    "sync:ui": "node wraper-healer/syncUiKnowledge.mjs",
+    "cucumber": "npx cucumber-js",
+    "cucumber:tenant": "npx cucumber-js --profile tenant"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.0.0",
+    "@playwright/test": "^1.42.0",
+    "dotenv": "^16.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "chalk": "^5.6.2"
+  }
+}

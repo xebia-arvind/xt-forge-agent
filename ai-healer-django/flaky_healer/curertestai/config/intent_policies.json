@@ -1,0 +1,80 @@
+{
+  "add_to_cart": {
+    "blocked_selector_patterns": [
+      "(/cart|cart-icon|data-testid=[\"']cart-icon|bi-bag)",
+      "^a\\["
+    ],
+    "allowed_hint_patterns": [
+      "button",
+      "add",
+      "cart-plus"
+    ]
+  },
+  "checkout": {
+    "blocked_selector_patterns": [],
+    "allowed_hint_patterns": [
+      "checkout",
+      "proceed",
+      "pay",
+      "button",
+      "a\\["
+    ]
+  },
+  "payment": {
+    "blocked_selector_patterns": [
+      "cart-icon"
+    ],
+    "allowed_hint_patterns": [
+      "pay",
+      "payment",
+      "button"
+    ]
+  },
+  "view_details": {
+    "blocked_selector_patterns": [],
+    "allowed_hint_patterns": [
+      "view",
+      "details",
+      "a\\["
+    ]
+  },
+  "wishlist": {
+    "blocked_selector_patterns": [
+      "(/cart|cart-icon|checkout|payment)",
+      "(add to cart|proceed to checkout|pay now)"
+    ],
+    "allowed_hint_patterns": [
+      "wishlist",
+      "wish",
+      "favorite",
+      "favourite",
+      "heart",
+      "save",
+      "button",
+      "a\\["
+    ]
+  },
+  "coupon": {
+    "blocked_selector_patterns": [
+      "(/payment|pay now|checkout|cart-icon)",
+      "(add to cart)"
+    ],
+    "allowed_hint_patterns": [
+      "coupon",
+      "discount",
+      "promo",
+      "code",
+      "apply",
+      "enter code",
+      "have a coupon",
+      "voucher",
+      "redeem",
+      "button",
+      "input"
+    ]
+  },
+  "generic": {
+    "blocked_selector_patterns": [],
+    "allowed_hint_patterns": []
+  }
+}

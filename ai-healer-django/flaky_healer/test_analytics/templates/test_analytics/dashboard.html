@@ -1,0 +1,1569 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Analytics · XT-Forge{% endblock %}
+{% block panel_title %}
+  {% if active_panel == "jobs" %}📈 Jobs analytics{% else %}📊 Healer analytics{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe4f0;
+      --ok: #1d7f4f;
+      --bad: #b91c1c;
+      --warn: #b45309;
+      --blue: #1d4ed8;
+      --blue-soft: #dbeafe;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* body / .page / .top rules removed — _layout.html owns the page chrome. */
+
+    .filters {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #dbeafe;
+    }
+
+    .field select,
+    .field input {
+      width: 100%;
+      border: 1px solid #89a8d8;
+      border-radius: 8px;
+      padding: 9px;
+      font-size: 13px;
+      background: #f8fbff;
+      color: #0f172a;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: #f59e0b;
+      color: #111827;
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      margin-left: 8px;
+    }
+    .btn-outline:hover { background: #f1f5f9; }
+
+    .kpis {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .tabs {
+      margin-top: 14px;
+      display: inline-flex;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: #0f172a;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tab-btn.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .kpi .value {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .kpi.ok .value {
+      color: var(--ok);
+    }
+
+    .kpi.bad .value {
+      color: var(--bad);
+    }
+
+    .kpi.warn .value {
+      color: var(--warn);
+    }
+
+    /* Analytics panels stack vertically now — the sidebar already consumes
+       220px of horizontal real estate, leaving too little room for a 2-col
+       layout. Charts read fine below the primary table. */
+    .content {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .content-healer,
+    .content-jobs {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 68px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .chart-label {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar-wrap {
+      background: #eef3fa;
+      border-radius: 999px;
+      overflow: hidden;
+      height: 12px;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 180ms ease;
+    }
+
+    .bar.blue {
+      background: #3b82f6;
+    }
+
+    .bar.red {
+      background: #ef4444;
+    }
+
+    .bar.green {
+      background: #22c55e;
+    }
+
+    .bar.orange {
+      background: #f59e0b;
+    }
+
+    .count {
+      text-align: right;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 12px;
+      color: var(--muted);
+      background: #f8fafc;
+      position: sticky;
+      top: 0;
+    }
+
+    .mono {
+      font-family: Menlo, Monaco, monospace;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .badge.bad {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .data-box {
+      max-height: 350px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .details {
+      margin-top: 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .detail-kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .detail-kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 8px;
+    }
+
+    .detail-kpi .label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .detail-kpi .value {
+      font-size: 12px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .timeline-table td,
+    .timeline-table th {
+      font-size: 12px;
+      padding: 7px 6px;
+    }
+
+    .raw-toggle {
+      margin-top: 10px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      border: 1px solid #c7d2fe;
+    }
+
+    .raw-json {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .details pre {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 220px;
+      overflow: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .empty {
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .jobs-table td,
+    .jobs-table th {
+      font-size: 12px;
+      padding: 7px 6px;
+    }
+
+    .job-detail-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .job-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 6px;
+    }
+
+    .btn-secondary {
+      background: #dbeafe;
+      color: #1e3a8a;
+      border: 1px solid #93c5fd;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .scenario-list,
+    .artifact-list {
+      max-height: 220px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 8px;
+      margin-top: 8px;
+    }
+
+    .scenario-row,
+    .artifact-row {
+      padding: 7px 6px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+
+    .scenario-row:last-child,
+    .artifact-row:last-child {
+      border-bottom: 0;
+    }
+
+    .artifact-actions {
+      margin-top: 5px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 14px;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(1100px, 96vw);
+      max-height: 88vh;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.35);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    .modal-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .modal-body {
+      padding: 10px 12px;
+      overflow: auto;
+    }
+
+    .modal-body textarea {
+      width: 100%;
+      min-height: 56vh;
+      margin: 0;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      font-family: Menlo, Monaco, monospace;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .modal-status {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1080px) {
+      .kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .content-healer {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .detail-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .job-detail-head {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    {# The Healer/Jobs switcher lives in the sidebar now; the tab markup below
+       stays for JS DOM references but is hidden by CSS. `active_panel` decides
+       which section to reveal. #}
+    <section class="tabs" style="display:none">
+      <button type="button" id="tabHealer" class="tab-btn active">Healer</button>
+      <button type="button" id="tabJobs" class="tab-btn">Jobs</button>
+    </section>
+
+    <section id="healerPanel" class="tab-panel{% if active_panel != 'jobs' %} active{% endif %}"
+             style="{% if active_panel == 'jobs' %}display:none{% endif %}">
+      <form id="filterForm" class="filters">
+        <div class="field">
+          <label for="runId">Run</label>
+          <select id="runId" name="run_id">
+            <option value="">All Runs</option>
+            {% for run in runs %}
+            <option value="{{ run.run_id }}" data-build-id="{{ run.build_id|default:'' }}"
+              data-environment="{{ run.environment|default:'' }}" {% if run.run_id == selected_run_id %}selected{% endif %}>
+              {{ run.run_id }} ({{ run.environment|default:'NA' }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="buildId">Build</label>
+          <input id="buildId" name="build_id" value="{{ selected_build_id }}" placeholder="e.g. build-128" />
+        </div>
+
+        <div class="field">
+          <label for="environment">Environment</label>
+          <input id="environment" name="environment" value="{{ selected_environment }}" placeholder="e.g. local" />
+        </div>
+
+        <div>
+          <button type="submit" class="btn-primary">Apply</button>
+          <button type="button" class="btn-outline" id="clearBtn">Clear</button>
+        </div>
+      </form>
+
+      <section class="kpis">
+        <article class="kpi">
+          <div class="label">Total Tests</div>
+          <div class="value" id="kTotal">0</div>
+        </article>
+        <article class="kpi ok">
+          <div class="label">Passed</div>
+          <div class="value" id="kPassed">0</div>
+        </article>
+        <article class="kpi bad">
+          <div class="label">Failed</div>
+          <div class="value" id="kFailed">0</div>
+        </article>
+        <article class="kpi warn">
+          <div class="label">Healing Attempted</div>
+          <div class="value" id="kAttempted">0</div>
+        </article>
+        <article class="kpi ok">
+          <div class="label">Healing Success</div>
+          <div class="value" id="kHealSuccess">0</div>
+        </article>
+        <article class="kpi bad">
+          <div class="label">False Positive</div>
+          <div class="value" id="kFalsePos">0</div>
+        </article>
+        <article class="kpi ok">
+          <div class="label">Cache Hits</div>
+          <div class="value" id="kCacheHits">0</div>
+        </article>
+        <article class="kpi warn">
+          <div class="label">Cache Misses</div>
+          <div class="value" id="kCacheMisses">0</div>
+        </article>
+        <article class="kpi bad">
+          <div class="label">Cache Fallback</div>
+          <div class="value" id="kCacheFallback">0</div>
+        </article>
+      </section>
+
+      <section class="content content-healer">
+        <article class="card">
+          <h2>Recent Failures</h2>
+          <div class="data-box">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Test</th>
+                  <th>Failure</th>
+                  <th>Healing</th>
+                  <th>Validation</th>
+                  <th>UI Change</th>
+                  <th>History Assist</th>
+                  <th>History Hits</th>
+                  <th>Confidence</th>
+                  <th>Run</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recentFailuresBody"></tbody>
+            </table>
+          </div>
+          <div class="details" id="detailPanel" style="display:none;">
+            <h2>Test Result Timeline</h2>
+            <div class="muted" id="detailMeta"></div>
+            <div class="detail-kpis">
+              <div class="detail-kpi">
+                <div class="label">Failure Category</div>
+                <div class="value" id="dFailureCategory">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Healing Outcome</div>
+                <div class="value" id="dHealingOutcome">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Validation</div>
+                <div class="value" id="dValidationStatus">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">UI Change</div>
+                <div class="value" id="dUiChange">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">History / Hits</div>
+                <div class="value" id="dHistory">NA</div>
+              </div>
+            </div>
+            <div class="detail-kpis">
+              <div class="detail-kpi">
+                <div class="label">Failed Selector</div>
+                <div class="value mono" id="dFailedSelector">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Healed Selector</div>
+                <div class="value mono" id="dHealedSelector">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Confidence</div>
+                <div class="value mono" id="dConfidence">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Root Cause</div>
+                <div class="value" id="dRootCause">NA</div>
+              </div>
+              <div class="detail-kpi">
+                <div class="label">Error Summary</div>
+                <div class="value" id="dErrorSummary">NA</div>
+              </div>
+            </div>
+            <div class="data-box">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Step</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Selector</th>
+                    <th>Healed Selector</th>
+                    <th>Message</th>
+                  </tr>
+                </thead>
+                <tbody id="detailStepsBody"></tbody>
+              </table>
+            </div>
+            <button type="button" class="raw-toggle" id="rawToggleBtn">Show Raw JSON</button>
+            <pre id="detailJson" class="raw-json"></pre>
+          </div>
+        </article>
+
+        <div class="stack">
+          <article class="card">
+            <h2>Failure Category Breakdown</h2>
+            <div id="failureChart"></div>
+          </article>
+
+          <article class="card">
+            <h2>Healing Outcome Breakdown</h2>
+            <div id="healingChart"></div>
+          </article>
+
+          <article class="card">
+            <h2>History Assist Impact</h2>
+            <div class="muted" id="historyMeta"></div>
+            <div id="historyChart" style="margin-top:8px;"></div>
+          </article>
+
+          <article class="card">
+            <h2>Top Failed Selectors</h2>
+            <div id="selectorChart"></div>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section id="jobsPanel" class="tab-panel{% if active_panel == 'jobs' %} active{% endif %}"
+             style="{% if active_panel != 'jobs' %}display:none{% endif %}">
+      <section class="kpis">
+        <article class="kpi">
+          <div class="label">Generation Jobs</div>
+          <div class="value" id="kGenJobs">0</div>
+        </article>
+        <article class="kpi ok">
+          <div class="label">Generated Pass Rate %</div>
+          <div class="value" id="kGenPassRate">0</div>
+        </article>
+        <article class="kpi warn">
+          <div class="label">Materialized Ratio %</div>
+          <div class="value" id="kGenMaterializeRate">0</div>
+        </article>
+      </section>
+
+      <section class="content content-jobs">
+        <div class="stack">
+          <article class="card">
+            <h2>Recent Jobs</h2>
+            <div class="data-box">
+              <table class="jobs-table">
+                <thead>
+                  <tr>
+                    <th>Job</th>
+                    <th>Feature</th>
+                    <th>Status</th>
+                    <th>Artifacts</th>
+                    <th>Created</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="jobsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>Job Detail</h2>
+            <div id="jobDetailEmpty" class="empty">Select a job to inspect artifacts and take action.</div>
+            <div id="jobDetailPanel" style="display:none;">
+              <div class="job-detail-head">
+                <div class="detail-kpi">
+                  <div class="label">Job ID</div>
+                  <div class="value mono" id="jdJobId">NA</div>
+                </div>
+                <div class="detail-kpi">
+                  <div class="label">Status</div>
+                  <div class="value" id="jdStatus">NA</div>
+                </div>
+                <div class="detail-kpi">
+                  <div class="label">Feature</div>
+                  <div class="value" id="jdFeature">NA</div>
+                </div>
+                <div class="detail-kpi">
+                  <div class="label">Approved By</div>
+                  <div class="value" id="jdApprovedBy">NA</div>
+                </div>
+              </div>
+
+              <div class="job-actions">
+                <button type="button" class="btn-primary" id="approveJobBtn">Approve Selected Scenarios</button>
+                <button type="button" class="btn-secondary" id="materializeJobBtn">Materialize</button>
+                <button type="button" class="btn-danger" id="refreshJobBtn">Refresh Detail</button>
+              </div>
+              <div class="muted" id="jobActionMsg"></div>
+
+              <h3 style="margin:10px 0 6px; font-size:14px;">Scenarios (select for approval)</h3>
+              <div class="scenario-list" id="jobScenarioList"></div>
+
+              <h3 style="margin:10px 0 6px; font-size:14px;">Artifacts (validation)</h3>
+              <div class="artifact-list" id="jobArtifactList"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <h2>Generation Jobs</h2>
+          <div class="muted" id="generationMeta"></div>
+          <div id="generationChart" style="margin-top:8px;"></div>
+        </article>
+      </section>
+    </section>
+
+  <div id="artifactModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="artifactModalTitle">
+      <div class="modal-head">
+        <div id="artifactModalTitle" class="modal-title">Artifact Preview</div>
+        <button type="button" id="artifactModalCloseBtn" class="btn-danger">Close</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="artifactModalEditor" spellcheck="false"></textarea>
+        <div class="modal-actions">
+          <div id="artifactModalStatus" class="modal-status"></div>
+          <button type="button" id="artifactModalSaveBtn" class="btn-primary">Save Artifact</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const summaryApiBase = "{% url 'test_analytics_summary' %}";
+    const detailApiTemplate = "{% url 'test_result_detail' 1 %}";
+    const generationJobBase = "{% url 'generation_job_create' %}";
+    const dashboardLoginUrl = "{% url 'test_analytics_login' %}";
+
+    const filterForm = document.getElementById("filterForm");
+    const clearBtn = document.getElementById("clearBtn");
+    const runIdInput = document.getElementById("runId");
+    const buildIdInput = document.getElementById("buildId");
+    const environmentInput = document.getElementById("environment");
+    const tabHealer = document.getElementById("tabHealer");
+    const tabJobs = document.getElementById("tabJobs");
+    const healerPanel = document.getElementById("healerPanel");
+    const jobsPanel = document.getElementById("jobsPanel");
+
+    const kTotal = document.getElementById("kTotal");
+    const kPassed = document.getElementById("kPassed");
+    const kFailed = document.getElementById("kFailed");
+    const kAttempted = document.getElementById("kAttempted");
+    const kHealSuccess = document.getElementById("kHealSuccess");
+    const kFalsePos = document.getElementById("kFalsePos");
+    const kCacheHits = document.getElementById("kCacheHits");
+    const kCacheMisses = document.getElementById("kCacheMisses");
+    const kCacheFallback = document.getElementById("kCacheFallback");
+    const kGenJobs = document.getElementById("kGenJobs");
+    const kGenPassRate = document.getElementById("kGenPassRate");
+    const kGenMaterializeRate = document.getElementById("kGenMaterializeRate");
+
+    const failureChart = document.getElementById("failureChart");
+    const healingChart = document.getElementById("healingChart");
+    const selectorChart = document.getElementById("selectorChart");
+    const historyChart = document.getElementById("historyChart");
+    const generationChart = document.getElementById("generationChart");
+    const historyMeta = document.getElementById("historyMeta");
+    const generationMeta = document.getElementById("generationMeta");
+    const recentFailuresBody = document.getElementById("recentFailuresBody");
+    const detailPanel = document.getElementById("detailPanel");
+    const detailMeta = document.getElementById("detailMeta");
+    const detailStepsBody = document.getElementById("detailStepsBody");
+    const rawToggleBtn = document.getElementById("rawToggleBtn");
+    const detailJson = document.getElementById("detailJson");
+    const dFailureCategory = document.getElementById("dFailureCategory");
+    const dHealingOutcome = document.getElementById("dHealingOutcome");
+    const dValidationStatus = document.getElementById("dValidationStatus");
+    const dUiChange = document.getElementById("dUiChange");
+    const dHistory = document.getElementById("dHistory");
+    const dFailedSelector = document.getElementById("dFailedSelector");
+    const dHealedSelector = document.getElementById("dHealedSelector");
+    const dConfidence = document.getElementById("dConfidence");
+    const dRootCause = document.getElementById("dRootCause");
+    const dErrorSummary = document.getElementById("dErrorSummary");
+    const jobsTableBody = document.getElementById("jobsTableBody");
+    const jobDetailEmpty = document.getElementById("jobDetailEmpty");
+    const jobDetailPanel = document.getElementById("jobDetailPanel");
+    const jdJobId = document.getElementById("jdJobId");
+    const jdStatus = document.getElementById("jdStatus");
+    const jdFeature = document.getElementById("jdFeature");
+    const jdApprovedBy = document.getElementById("jdApprovedBy");
+    const jobScenarioList = document.getElementById("jobScenarioList");
+    const jobArtifactList = document.getElementById("jobArtifactList");
+    const approveJobBtn = document.getElementById("approveJobBtn");
+    const materializeJobBtn = document.getElementById("materializeJobBtn");
+    const refreshJobBtn = document.getElementById("refreshJobBtn");
+    const jobActionMsg = document.getElementById("jobActionMsg");
+    const artifactModal = document.getElementById("artifactModal");
+    const artifactModalTitle = document.getElementById("artifactModalTitle");
+    const artifactModalEditor = document.getElementById("artifactModalEditor");
+    const artifactModalStatus = document.getElementById("artifactModalStatus");
+    const artifactModalSaveBtn = document.getElementById("artifactModalSaveBtn");
+    const artifactModalCloseBtn = document.getElementById("artifactModalCloseBtn");
+    let activeTab = "healer";
+    let jobsCache = [];
+    let selectedJobId = "";
+    let selectedJobDetail = null;
+    let selectedArtifactContent = "";
+    let selectedArtifactPath = "";
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function escaped(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, (char) => {
+        const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" };
+        return map[char] || char;
+      });
+    }
+
+    function buildSummaryUrl() {
+      const params = new URLSearchParams();
+      if (runIdInput.value.trim()) params.set("run_id", runIdInput.value.trim());
+      if (buildIdInput.value.trim()) params.set("build_id", buildIdInput.value.trim());
+      if (environmentInput.value.trim()) params.set("environment", environmentInput.value.trim());
+
+      const query = params.toString();
+      return query ? `${summaryApiBase}?${query}` : summaryApiBase;
+    }
+
+    function setActiveTab(tabName, syncUrl = true) {
+      activeTab = tabName === "jobs" ? "jobs" : "healer";
+      const healerActive = activeTab === "healer";
+      // Guard: the sidebar handles Healer/Jobs navigation now; the internal
+      // tab buttons may be missing on some renders. Section visibility is
+      // driven server-side via `active_panel`, but the JS still updates the
+      // inline style so legacy call paths keep working.
+      if (tabHealer) tabHealer.classList.toggle("active", healerActive);
+      if (tabJobs)   tabJobs.classList.toggle("active", !healerActive);
+      if (healerPanel) {
+        healerPanel.classList.toggle("active", healerActive);
+        healerPanel.style.display = healerActive ? "" : "none";
+      }
+      if (jobsPanel) {
+        jobsPanel.classList.toggle("active", !healerActive);
+        jobsPanel.style.display = !healerActive ? "" : "none";
+      }
+      if (syncUrl) syncFiltersToUrl();
+    }
+
+    function redirectToDashboardLogin() {
+      const next = `${window.location.pathname}${window.location.search}`;
+      window.location.href = `${dashboardLoginUrl}?next=${encodeURIComponent(next)}`;
+    }
+
+    function renderBars(container, rows, keyLabel, keyCount, color) {
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<div class="empty">No data available for current filters.</div>';
+        return;
+      }
+
+      const max = Math.max(...rows.map((r) => Number(r[keyCount] || 0)), 1);
+      container.innerHTML = rows.map((row) => {
+        const label = row[keyLabel] || "UNKNOWN";
+        const count = Number(row[keyCount] || 0);
+        const width = Math.max(4, Math.round((count / max) * 100));
+
+        return `
+          <div class="chart-row">
+            <div>
+              <div class="chart-label" title="${escaped(label)}">${escaped(label)}</div>
+              <div class="bar-wrap">
+                <div class="bar ${color}" style="width:${width}%;"></div>
+              </div>
+            </div>
+            <div class="count">${count}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderRecentFailures(items) {
+      if (!items || items.length === 0) {
+        recentFailuresBody.innerHTML = '<tr><td colspan="11" class="muted">No failures in selected scope.</td></tr>';
+        return;
+      }
+
+      recentFailuresBody.innerHTML = items.map((item) => {
+        const category = item.failure_category || "UNKNOWN";
+        const healing = item.healing_outcome || "NOT_ATTEMPTED";
+        const validation = item.validation_status || "NA";
+        const uiChange = item.ui_change_level || "UNKNOWN";
+        const historyAssist = item.history_assisted ? "YES" : "NO";
+        const historyHits = Number(item.history_hits || 0);
+        const confidence = item.healing_confidence != null ? Number(item.healing_confidence).toFixed(4) : "NA";
+        return `
+          <tr>
+            <td class="mono">${item.id}</td>
+            <td>${escaped(item.test_name || "")}</td>
+            <td><span class="badge bad">${escaped(category)}</span></td>
+            <td><span class="badge warn">${escaped(healing)}</span></td>
+            <td><span class="badge ${validation === "VALID" ? "ok" : "warn"}">${escaped(validation)}</span></td>
+            <td class="mono">${escaped(uiChange)}</td>
+            <td class="mono">${historyAssist}</td>
+            <td class="mono">${historyHits}</td>
+            <td class="mono">${confidence}</td>
+            <td class="mono">${escaped(item.test_run__run_id || "")}</td>
+            <td><button type="button" class="btn-primary" data-id="${item.id}">View</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderHealingSummary(summary) {
+      const rows = [
+        { name: "Attempted", count: summary.attempted || 0 },
+        { name: "Success", count: summary.success || 0 },
+        { name: "Failed", count: summary.failed || 0 },
+        { name: "Not Attempted", count: summary.not_attempted || 0 },
+        { name: "False Positive", count: summary.false_positive || 0 },
+      ];
+      renderBars(healingChart, rows, "name", "count", "orange");
+    }
+
+    function renderHistorySummary(summary) {
+      if (!summary) {
+        historyMeta.textContent = "No history data available.";
+        historyChart.innerHTML = '<div class="empty">No data available for current filters.</div>';
+        return;
+      }
+
+      const assistedRate = Number(summary.assisted_success_rate || 0).toFixed(2);
+      const nonAssistedRate = Number(summary.non_assisted_success_rate || 0).toFixed(2);
+      historyMeta.textContent =
+        `Assisted: ${summary.assisted_success || 0}/${summary.assisted_attempts || 0} (${assistedRate}%) | ` +
+        `Non-assisted: ${summary.non_assisted_success || 0}/${summary.non_assisted_attempts || 0} (${nonAssistedRate}%)`;
+
+      const bucketRows = (summary.buckets || []).map((b) => ({
+        name: `hits=${b.history_bucket}`,
+        count: Number(b.success_rate || 0),
+      }));
+
+      if (bucketRows.length === 0) {
+        historyChart.innerHTML = '<div class="empty">No healing-attempt data for history buckets.</div>';
+        return;
+      }
+
+      renderBars(historyChart, bucketRows, "name", "count", "green");
+    }
+
+    function renderGenerationSummary(summary) {
+      const stats = summary || {};
+      const jobStatuses = stats.job_status_breakdown || [];
+      const approvalRatio = Number(stats.approval_ratio || 0).toFixed(2);
+      const materializationRatio = Number(stats.materialization_ratio || 0).toFixed(2);
+      const generated = stats.generated_test_results || {};
+      const passRate = Number(generated.pass_rate || 0).toFixed(2);
+
+      generationMeta.textContent =
+        `Approved ratio: ${approvalRatio}% | Materialized ratio: ${materializationRatio}% | ` +
+        `Generated pass rate: ${passRate}%`;
+
+      renderBars(
+        generationChart,
+        jobStatuses.map((x) => ({ name: x.job_status || "UNKNOWN", count: x.count || 0 })),
+        "name",
+        "count",
+        "blue"
+      );
+    }
+
+    function renderJobsTable(items) {
+      const rows = Array.isArray(items) ? items : [];
+      if (!rows.length) {
+        jobsTableBody.innerHTML = '<tr><td colspan="6" class="muted">No generation jobs found.</td></tr>';
+        return;
+      }
+      jobsTableBody.innerHTML = rows.map((job) => {
+        const total = Number(job.total_artifacts || 0);
+        const valid = Number(job.valid_artifacts || 0);
+        const invalid = Number(job.invalid_artifacts || 0);
+        const createdOn = job.created_on ? new Date(job.created_on).toLocaleString() : "NA";
+        return `
+          <tr>
+            <td class="mono">${escaped((job.job_id || "").slice(0, 8))}</td>
+            <td>${escaped(job.feature_name || "NA")}</td>
+            <td><span class="badge warn">${escaped(job.job_status || "NA")}</span></td>
+            <td class="mono">${valid}/${total} valid (${invalid} invalid)</td>
+            <td class="mono">${escaped(createdOn)}</td>
+            <td><button type="button" class="btn-primary" data-job-id="${escaped(job.job_id || "")}">View</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderJobDetail(job) {
+      selectedJobDetail = job || null;
+      if (!job) {
+        jobDetailPanel.style.display = "none";
+        jobDetailEmpty.style.display = "block";
+        closeArtifactModal();
+        return;
+      }
+      jobDetailEmpty.style.display = "none";
+      jobDetailPanel.style.display = "block";
+      jdJobId.textContent = job.job_id || "NA";
+      jdStatus.textContent = job.status || "NA";
+      jdFeature.textContent = job.feature_name || "NA";
+      jdApprovedBy.textContent = job.approved_by || "NA";
+      const statusValue = String(job.status || "").toUpperCase();
+      approveJobBtn.disabled = !(statusValue === "DRAFT_READY" || statusValue === "APPROVED");
+      materializeJobBtn.disabled = !(statusValue === "APPROVED" || statusValue === "MATERIALIZED");
+
+      const scenarios = Array.isArray(job.scenarios) ? job.scenarios : [];
+      if (!scenarios.length) {
+        jobScenarioList.innerHTML = '<div class="muted">No scenarios found.</div>';
+      } else {
+        jobScenarioList.innerHTML = scenarios.map((s) => `
+          <label class="scenario-row">
+            <input type="checkbox" data-scenario-id="${escaped(s.scenario_id || "")}" ${s.selected_for_materialization ? "checked" : ""} />
+            <span style="margin-left:6px;"><strong>${escaped(s.title || "Scenario")}</strong> [${escaped(s.scenario_type || "NA")}]</span>
+          </label>
+        `).join("");
+      }
+
+      const artifacts = Array.isArray(job.artifacts) ? job.artifacts : [];
+      if (!artifacts.length) {
+        jobArtifactList.innerHTML = '<div class="muted">No artifacts found.</div>';
+        closeArtifactModal();
+      } else {
+        jobArtifactList.innerHTML = artifacts.map((a, idx) => `
+          <div class="artifact-row">
+            <div><strong>${escaped(a.relative_path || "NA")}</strong></div>
+            <div class="mono">type=${escaped(a.artifact_type || "NA")} | status=${escaped(a.validation_status || "NA")}</div>
+            <div class="mono">errors=${escaped((a.validation_errors || []).join(" | ") || "none")}</div>
+            <div class="mono">warnings=${escaped((a.warnings || []).join(" | ") || "none")}</div>
+            <div class="artifact-actions">
+              <button type="button" class="btn-secondary" data-artifact-index="${idx}">Preview</button>
+            </div>
+          </div>
+        `).join("");
+        closeArtifactModal();
+      }
+    }
+
+    async function loadJobDetail(jobId) {
+      selectedJobId = jobId || "";
+      if (!selectedJobId) return;
+      jobActionMsg.textContent = "";
+      const detailUrl = `${generationJobBase}${selectedJobId}/`;
+      const resp = await fetch(detailUrl);
+      if (resp.status === 401 || resp.status === 403) {
+        redirectToDashboardLogin();
+        return;
+      }
+      if (!resp.ok) throw new Error(`Job detail API failed: ${resp.status}`);
+      const data = await resp.json();
+      renderJobDetail(data);
+    }
+
+    function previewArtifactByIndex(indexValue) {
+      const idx = Number(indexValue);
+      const artifacts = Array.isArray(selectedJobDetail?.artifacts) ? selectedJobDetail.artifacts : [];
+      if (!Number.isInteger(idx) || idx < 0 || idx >= artifacts.length) return;
+      const artifact = artifacts[idx] || {};
+      const content = String(artifact.content_final || artifact.content_draft || "");
+      selectedArtifactPath = String(artifact.relative_path || "");
+      selectedArtifactContent = content || "// No artifact content available";
+      openArtifactModal(artifact.relative_path || "Artifact Preview", selectedArtifactContent);
+    }
+
+    function openArtifactModal(title, content) {
+      artifactModalTitle.textContent = title || "Artifact Preview";
+      artifactModalEditor.value = String(content || "// No artifact content available");
+      artifactModalStatus.textContent = "";
+      artifactModal.classList.add("show");
+      artifactModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeArtifactModal() {
+      artifactModal.classList.remove("show");
+      artifactModal.setAttribute("aria-hidden", "true");
+      artifactModalStatus.textContent = "";
+    }
+
+    async function saveArtifactEdits() {
+      if (!selectedJobId || !selectedArtifactPath) return;
+      const payload = {
+        relative_path: selectedArtifactPath,
+        content: String(artifactModalEditor.value || ""),
+        update_draft: true,
+      };
+      artifactModalSaveBtn.disabled = true;
+      artifactModalStatus.textContent = "Saving...";
+      const resp = await fetch(`${generationJobBase}${selectedJobId}/artifacts/update/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+      artifactModalSaveBtn.disabled = false;
+      if (resp.status === 401 || resp.status === 403) {
+        redirectToDashboardLogin();
+        return;
+      }
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(body.error || `Artifact save failed: ${resp.status}`);
+      }
+      const statusText = body?.artifact?.validation_status || "UPDATED";
+      artifactModalStatus.textContent = `Saved. Validation status: ${statusText}`;
+      jobActionMsg.textContent = `Artifact saved: ${selectedArtifactPath}`;
+      await loadSummary();
+      await loadJobDetail(selectedJobId);
+    }
+
+    function selectedScenarioIds() {
+      const boxes = Array.from(jobScenarioList.querySelectorAll('input[type="checkbox"][data-scenario-id]'));
+      return boxes.filter((x) => x.checked).map((x) => x.getAttribute("data-scenario-id")).filter(Boolean);
+    }
+
+    async function approveSelectedJob() {
+      if (!selectedJobId) return;
+      const approvedBy = window.prompt("Approved by (required):", "dashboard-user");
+      if (!approvedBy || !approvedBy.trim()) {
+        jobActionMsg.textContent = "Approval cancelled: approved_by is required.";
+        return;
+      }
+      const include = selectedScenarioIds();
+      const payload = {
+        approved_by: approvedBy.trim(),
+        notes: "Approved from analytics dashboard",
+        include_scenario_ids: include,
+      };
+      const resp = await fetch(`${generationJobBase}${selectedJobId}/approve/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (resp.status === 401 || resp.status === 403) {
+        redirectToDashboardLogin();
+        return;
+      }
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(body.error || `Approve failed: ${resp.status}`);
+      }
+      jobActionMsg.textContent = `Approval successful. Status: ${body.status || "UPDATED"}`;
+      await loadSummary();
+      await loadJobDetail(selectedJobId);
+    }
+
+    async function materializeSelectedJob() {
+      if (!selectedJobId) return;
+      const allowOverwrite = window.confirm("Allow overwrite if files already exist?");
+      const resp = await fetch(`${generationJobBase}${selectedJobId}/materialize/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: JSON.stringify({ allow_overwrite: allowOverwrite }),
+      });
+      if (resp.status === 401 || resp.status === 403) {
+        redirectToDashboardLogin();
+        return;
+      }
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(body.error || `Materialize failed: ${resp.status}`);
+      }
+      const written = Array.isArray(body.written_files) ? body.written_files.length : 0;
+      jobActionMsg.textContent = `Materialization successful. Files written: ${written}`;
+      await loadSummary();
+      await loadJobDetail(selectedJobId);
+    }
+
+    function syncFiltersToUrl() {
+      // The URL path itself now identifies the tab (/healer/ vs /jobs/), so we
+      // stopped writing ?tab= into the query string. Only filter values live here.
+      const params = new URLSearchParams();
+      if (runIdInput.value.trim()) params.set("run_id", runIdInput.value.trim());
+      if (buildIdInput.value.trim()) params.set("build_id", buildIdInput.value.trim());
+      if (environmentInput.value.trim()) params.set("environment", environmentInput.value.trim());
+
+      const next = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.replaceState({}, "", next);
+    }
+
+    function shortError(errorMessage) {
+      const firstLine = String(errorMessage || "").split("\n")[0] || "";
+      return firstLine.length > 140 ? `${firstLine.slice(0, 140)}...` : firstLine || "NA";
+    }
+
+    function renderStepTimeline(stepEvents) {
+      const events = Array.isArray(stepEvents) ? stepEvents : [];
+      if (events.length === 0) {
+        detailStepsBody.innerHTML = '<tr><td colspan="8" class="muted">No step timeline found for this test result.</td></tr>';
+        return;
+      }
+
+      detailStepsBody.innerHTML = events.map((step, index) => {
+        const status = step.status || "UNKNOWN";
+        const badgeClass = status === "PASSED" || status === "HEALED" ? "ok" : status === "FAILED" ? "bad" : "warn";
+        const when = step.timestamp ? new Date(step.timestamp).toLocaleTimeString() : "NA";
+        return `
+          <tr>
+            <td class="mono">${index + 1}</td>
+            <td class="mono">${escaped(when)}</td>
+            <td>${escaped(step.step_name || "NA")}</td>
+            <td>${escaped(step.step_type || "NA")}</td>
+            <td><span class="badge ${badgeClass}">${escaped(status)}</span></td>
+            <td class="mono">${escaped(step.failed_selector || "NA")}</td>
+            <td class="mono">${escaped(step.healed_selector || "NA")}</td>
+            <td>${escaped(step.message || "NA")}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function loadSummary() {
+      detailPanel.style.display = "none";
+      const fetchJson = async (url, label) => {
+        const resp = await fetch(url);
+        if (resp.status === 401 || resp.status === 403) {
+          redirectToDashboardLogin();
+          throw new Error("Unauthorized");
+        }
+        if (!resp.ok) throw new Error(`${label} failed: ${resp.status}`);
+        return resp.json();
+      };
+
+      const [healerResult, jobsResult] = await Promise.allSettled([
+        fetchJson(buildSummaryUrl(), "Healer summary API"),
+        fetchJson(summaryApiBase, "Jobs summary API"),
+      ]);
+
+      if (healerResult.status === "fulfilled") {
+        const data = healerResult.value || {};
+        const totals = data.totals || {};
+        const healing = data.healing_summary || {};
+        const cache = data.cache_summary || {};
+
+        kTotal.textContent = totals.total_tests ?? 0;
+        kPassed.textContent = totals.passed ?? 0;
+        kFailed.textContent = totals.failed ?? 0;
+        kAttempted.textContent = healing.attempted ?? 0;
+        kHealSuccess.textContent = healing.success ?? 0;
+        kFalsePos.textContent = healing.false_positive ?? 0;
+        kCacheHits.textContent = cache.cache_hits ?? 0;
+        kCacheMisses.textContent = cache.cache_misses ?? 0;
+        kCacheFallback.textContent = cache.cache_fallback_to_fresh ?? 0;
+
+        renderBars(failureChart, data.failure_breakdown || [], "failure_category", "count", "red");
+        renderHealingSummary(healing);
+        renderHistorySummary(data.history_summary || {});
+        renderBars(selectorChart, data.top_failed_selectors || [], "failed_selector", "count", "blue");
+        renderRecentFailures(data.recent_failures || []);
+      } else {
+        const error = healerResult.reason || new Error("Unknown healer summary error");
+        const html = `<div class="empty">Failed to load healer summary: ${escaped(error.message)}</div>`;
+        failureChart.innerHTML = html;
+        healingChart.innerHTML = html;
+        historyChart.innerHTML = html;
+        historyMeta.textContent = "Failed to load history metrics.";
+        selectorChart.innerHTML = html;
+        recentFailuresBody.innerHTML = '<tr><td colspan="11" class="muted">Could not load failures.</td></tr>';
+      }
+
+      if (jobsResult.status === "fulfilled") {
+        const jobsData = jobsResult.value || {};
+        const generation = jobsData.generation_summary || {};
+        const generatedResults = generation.generated_test_results || {};
+        jobsCache = generation.recent_jobs || [];
+        kGenJobs.textContent = generation.total_jobs ?? 0;
+        kGenPassRate.textContent = Number(generatedResults.pass_rate ?? 0).toFixed(2);
+        kGenMaterializeRate.textContent = Number(generation.materialization_ratio ?? 0).toFixed(2);
+        renderGenerationSummary(generation);
+        renderJobsTable(jobsCache);
+      } else {
+        const error = jobsResult.reason || new Error("Unknown jobs summary error");
+        const html = `<div class="empty">Failed to load jobs summary: ${escaped(error.message)}</div>`;
+        generationChart.innerHTML = html;
+        generationMeta.textContent = "Failed to load generation metrics.";
+        jobsTableBody.innerHTML = '<tr><td colspan="6" class="muted">Could not load jobs.</td></tr>';
+      }
+
+      syncFiltersToUrl();
+    }
+
+    async function loadDetail(id) {
+      try {
+        const detailUrl = detailApiTemplate.replace("/1/", `/${id}/`);
+        const resp = await fetch(detailUrl);
+        if (resp.status === 401 || resp.status === 403) {
+          redirectToDashboardLogin();
+          return;
+        }
+        if (!resp.ok) throw new Error(`Detail API failed: ${resp.status}`);
+
+        const detail = await resp.json();
+        detailPanel.style.display = "block";
+        detailMeta.textContent = `${detail.test_name || ""} | ${detail.status || ""} | run=${detail.run_id || ""}`;
+        dFailureCategory.textContent = detail.failure_category || "NA";
+        dHealingOutcome.textContent = detail.healing_outcome || "NA";
+        dValidationStatus.textContent = detail.validation_status || "NA";
+        dUiChange.textContent = detail.ui_change_level || "UNKNOWN";
+        dHistory.textContent = `${detail.history_assisted ? "ASSISTED" : "NOT_ASSISTED"} | hits=${detail.history_hits ?? 0}`;
+        dFailedSelector.textContent = detail.failed_selector || "NA";
+        dHealedSelector.textContent = detail.healed_selector || "NA";
+        dConfidence.textContent = detail.healing_confidence != null ? Number(detail.healing_confidence).toFixed(4) : "NA";
+        dRootCause.textContent = detail.root_cause || "NA";
+        dErrorSummary.textContent = shortError(detail.error_message);
+        renderStepTimeline(detail.step_events);
+
+        detailJson.style.display = "none";
+        rawToggleBtn.textContent = "Show Raw JSON";
+        detailJson.textContent = JSON.stringify(
+          {
+            failure_category: detail.failure_category,
+            healing_outcome: detail.healing_outcome,
+            validation_status: detail.validation_status,
+            ui_change_level: detail.ui_change_level,
+            history_assisted: detail.history_assisted,
+            history_hits: detail.history_hits,
+            healing_confidence: detail.healing_confidence,
+            failed_selector: detail.failed_selector,
+            healed_selector: detail.healed_selector,
+            root_cause: detail.root_cause,
+            step_events: detail.step_events,
+            error_message: detail.error_message,
+          },
+          null,
+          2
+        );
+      } catch (error) {
+        detailPanel.style.display = "block";
+        detailMeta.textContent = "Error";
+        detailStepsBody.innerHTML = '<tr><td colspan="8" class="muted">Could not load timeline.</td></tr>';
+        detailJson.style.display = "block";
+        rawToggleBtn.textContent = "Hide Raw JSON";
+        detailJson.textContent = `Could not load detail: ${error.message}`;
+      }
+    }
+
+    filterForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadSummary();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      runIdInput.value = "";
+      buildIdInput.value = "";
+      environmentInput.value = "";
+      loadSummary();
+    });
+
+    runIdInput.addEventListener("change", () => {
+      const selected = runIdInput.options[runIdInput.selectedIndex];
+      if (!selected) return;
+
+      if (!buildIdInput.value.trim() && selected.dataset.buildId) {
+        buildIdInput.value = selected.dataset.buildId;
+      }
+      if (!environmentInput.value.trim() && selected.dataset.environment) {
+        environmentInput.value = selected.dataset.environment;
+      }
+    });
+
+    recentFailuresBody.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const id = target.dataset.id;
+      if (!id) return;
+      loadDetail(id);
+    });
+
+    rawToggleBtn.addEventListener("click", () => {
+      const isHidden = detailJson.style.display === "none" || !detailJson.style.display;
+      detailJson.style.display = isHidden ? "block" : "none";
+      rawToggleBtn.textContent = isHidden ? "Hide Raw JSON" : "Show Raw JSON";
+    });
+
+    if (tabHealer) tabHealer.addEventListener("click", () => setActiveTab("healer"));
+    if (tabJobs)   tabJobs.addEventListener("click", () => setActiveTab("jobs"));
+    jobsTableBody.addEventListener("click", async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const jobId = target.getAttribute("data-job-id");
+      if (!jobId) return;
+      try {
+        await loadJobDetail(jobId);
+      } catch (error) {
+        jobActionMsg.textContent = `Failed to load job detail: ${error.message}`;
+        jobDetailPanel.style.display = "none";
+        jobDetailEmpty.style.display = "block";
+        jobDetailEmpty.textContent = `Failed to load job detail: ${error.message}`;
+      }
+    });
+    jobArtifactList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const idx = target.getAttribute("data-artifact-index");
+      if (idx == null) return;
+      previewArtifactByIndex(idx);
+    });
+    artifactModalCloseBtn.addEventListener("click", closeArtifactModal);
+    artifactModal.addEventListener("click", (event) => {
+      if (event.target === artifactModal) closeArtifactModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && artifactModal.classList.contains("show")) {
+        closeArtifactModal();
+      }
+    });
+    artifactModalSaveBtn.addEventListener("click", async () => {
+      try {
+        await saveArtifactEdits();
+      } catch (error) {
+        artifactModalStatus.textContent = `Save failed: ${error.message}`;
+      }
+    });
+    approveJobBtn.addEventListener("click", async () => {
+      try {
+        await approveSelectedJob();
+      } catch (error) {
+        jobActionMsg.textContent = `Approve failed: ${error.message}`;
+      }
+    });
+    materializeJobBtn.addEventListener("click", async () => {
+      try {
+        await materializeSelectedJob();
+      } catch (error) {
+        jobActionMsg.textContent = `Materialize failed: ${error.message}`;
+      }
+    });
+    refreshJobBtn.addEventListener("click", async () => {
+      if (!selectedJobId) return;
+      try {
+        await loadJobDetail(selectedJobId);
+      } catch (error) {
+        jobActionMsg.textContent = `Refresh failed: ${error.message}`;
+      }
+    });
+
+    // Initial tab is authoritative from the server (`active_panel` template
+    // var, set by the view: HealerAnalyticsView / JobsAnalyticsView). The old
+    // `?tab=` fallback caused mismatches when the browser URL had no query
+    // string but the view had injected one server-side.
+    const initTab = "{{ active_panel|default:'healer' }}" === "jobs" ? "jobs" : "healer";
+    setActiveTab(initTab, false);
+
+    loadSummary();
+</script>
+{% endblock %}

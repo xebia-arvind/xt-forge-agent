@@ -1,0 +1,340 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Review · XT-Forge{% endblock %}
+{% block panel_title %}✅ Review draft{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:280px;">
+      <label>Pick a job for this client</label>
+      <select id="job-picker"></select>
+    </div>
+    <div style="flex:1; min-width:280px;">
+      <label>… or paste a job ID</label>
+      <input id="job-id" type="text" placeholder="uuid">
+    </div>
+    <button id="btn-load">Load</button>
+    <button id="btn-run-artifacts" class="secondary" style="display:none;">Run Artifact Generator</button>
+    <button id="btn-approve" class="secondary" disabled>Approve</button>
+    <button id="btn-materialize" disabled>Materialize</button>
+    <span id="review-status" class="badge badge-info">idle</span>
+  </div>
+  <div id="review-message" style="margin-top:10px; font-size:13px;"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Job</h3>
+  <pre id="job-json" class="log" style="height:220px">(pick or paste a job)</pre>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Artifacts</h3>
+  <div id="artifacts"><em style="color:var(--muted); font-size:13px;">(none loaded)</em></div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+const statusEl = document.getElementById("review-status");
+const messageEl = document.getElementById("review-message");
+const jobIdInput = document.getElementById("job-id");
+const jobPicker = document.getElementById("job-picker");
+const btnApprove = document.getElementById("btn-approve");
+const btnMaterialize = document.getElementById("btn-materialize");
+const artifactsEl = document.getElementById("artifacts");
+
+function setStatus(msg, cls="badge-info") { statusEl.textContent = msg; statusEl.className = "badge " + cls; }
+function setMessage(msg, color="var(--muted)") { messageEl.innerHTML = `<span style="color:${color};">${msg}</span>`; }
+
+async function loadJobList() {
+  const r = await fetch("/test-generation/jobs/");
+  if (!r.ok) {
+    setStatus("failed to list jobs", "badge-fail");
+    return [];
+  }
+  const rows = await r.json();
+  jobPicker.innerHTML = `<option value="">— select —</option>` + rows.map(j =>
+    `<option value="${j.job_id}">${(j.feature_name||"").replace(/</g,"&lt;")} · ${j.status} · ${j.created_on}</option>`
+  ).join("");
+  return rows;
+}
+
+async function loadJob(id) {
+  if (!id) return;
+  setStatus("loading…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/`);
+  if (!r.ok) {
+    setStatus("load failed", "badge-fail");
+    setMessage(`HTTP ${r.status} — job not found or belongs to another client.`, "var(--bad)");
+    return;
+  }
+  const j = await r.json();
+  document.getElementById("job-json").textContent = JSON.stringify({
+    job_id: j.job_id,
+    feature_name: j.feature_name,
+    job_status: j.status || j.job_status,
+    stage: j.stage,
+    error_message: j.error_message || "",
+    approved_by: j.approved_by,
+    materialized_on: j.materialized_on,
+    validation_summary: j.validation_summary,
+    llm_notes: j.llm_notes,
+  }, null, 2);
+
+  // Validation errors now come as `{rule, message, severity}` objects from
+  // the unified validator; older jobs may still carry plain strings. Render
+  // both shapes so we never print "[object Object]".
+  function _fmtErr(e) {
+    if (e && typeof e === "object") {
+      const rule = String(e.rule || "").replace(/</g,"&lt;");
+      const msg  = String(e.message || "").replace(/</g,"&lt;");
+      return `<code style="color:#681c5c;">[${rule}]</code> ${msg}`;
+    }
+    return String(e).replace(/</g,"&lt;");
+  }
+  // Build a { relative_path -> normalizer_report_entry } lookup from the
+  // most recent stage_history entry that carries a diagnostic. Phase 2 of
+  // the robustness overhaul (AST normalizer sidecar) writes the report
+  // there so both clients can render it identically.
+  const _lastDiag = ((j.stage_history || []).slice().reverse().find(h => (h||{}).diagnostic)) || null;
+  const _normReport = (_lastDiag?.diagnostic?.normalizer_report) || [];
+  const _normByPath = {};
+  for (const r of _normReport) {
+    if (r && r.path) _normByPath[r.path] = r;
+  }
+  // Selector-verify report (per-file locator probe + repair from live DOM).
+  const _verifyReport = (_lastDiag?.diagnostic?.selector_verify_report) || null;
+  const _verifyByPath = {};
+  for (const pf of ((_verifyReport||{}).per_file || [])) {
+    if (pf && pf.relative_path) _verifyByPath[pf.relative_path] = pf;
+  }
+  function _fmtVerify(pf) {
+    if (!pf) return "";
+    const miss = pf.miss_count || 0;
+    const hit  = pf.hit_count  || 0;
+    if (hit === 0 && miss === 0) return "";
+    const kind = miss === 0 ? "badge-success" : "badge-fail";
+    const missItems = (pf.misses || []).map(m =>
+      `<li><code>${String(m.kind||"").replace(/</g,"&lt;")}</code> ${String(m.selector||"").replace(/</g,"&lt;")} (count=${m.count ?? "?"})</li>`
+    ).join("");
+    return `<div style="margin-top:8px; color:var(--muted); font-size:12px;">
+      <strong>Live-DOM selector probe</strong>
+      <span class="badge ${kind}" style="font-size:10px;">${hit}/${hit + miss} resolved</span>
+      ${pf.seed_url ? `<span style="margin-left:6px; opacity:0.7;">${String(pf.seed_url).replace(/</g,"&lt;")}</span>` : ""}
+      ${missItems ? `<ul style="margin:4px 0 0 0; padding-left:18px;">${missItems}</ul>` : ""}
+    </div>`;
+  }
+  function _fmtNormalizer(r) {
+    if (!r) return "";
+    const tx = r.transformations || [];
+    if (tx.length === 0 && r.sidecar !== "error") return "";
+    const items = tx.map(t =>
+      `<li><code>${String(t.name||"").replace(/</g,"&lt;")}</code>: ${String(t.detail||"").replace(/</g,"&lt;")}</li>`
+    ).join("");
+    const badge = r.sidecar === "ast"
+      ? `<span class="badge badge-success" style="font-size:10px;">AST</span>`
+      : r.sidecar === "error"
+      ? `<span class="badge badge-fail" style="font-size:10px;">sidecar error</span>`
+      : `<span class="badge" style="font-size:10px;">${String(r.sidecar||"").replace(/</g,"&lt;")}</span>`;
+    return `<div style="margin-top:8px; color:var(--muted); font-size:12px;">
+      <strong>Auto-fixes applied</strong> ${badge}
+      ${items ? `<ul style="margin:4px 0 0 0; padding-left:18px;">${items}</ul>` : ""}
+    </div>`;
+  }
+
+  artifactsEl.innerHTML = (j.artifacts||[]).map(a => {
+    const errs  = (a.validation_errors || []).map(e => `<li>${_fmtErr(e)}</li>`).join("");
+    const warns = (a.warnings || []).map(w => `<li>${_fmtErr(w)}</li>`).join("");
+    const norm  = _fmtNormalizer(_normByPath[a.relative_path]);
+    const verify = _fmtVerify(_verifyByPath[a.relative_path]);
+    return `
+    <details style="margin-bottom:6px; border:1px solid var(--line); border-radius:8px; padding:8px;">
+      <summary>
+        <strong>${a.artifact_type}</strong> · ${a.relative_path} ·
+        <span class="badge ${a.validation_status==='VALID'?'badge-success':'badge-fail'}">${a.validation_status}</span>
+      </summary>
+      ${errs ? `<div style="margin-top:8px; color:var(--bad); font-size:12px;"><strong>Validation errors:</strong><ul>${errs}</ul></div>` : ""}
+      ${warns ? `<div style="margin-top:6px; color:var(--warn); font-size:12px;"><strong>Warnings:</strong><ul>${warns}</ul></div>` : ""}
+      ${norm}
+      ${verify}
+      <pre class="log" style="height:220px; margin-top:6px;">${(a.content_final||a.content_draft||"").replace(/</g,"&lt;")}</pre>
+    </details>`;
+  }).join("") || `<em style="color:var(--muted); font-size:13px;">No artifacts on this job.</em>`;
+
+  const st = j.status || j.job_status;
+  const stage = j.stage || "";
+  const artifactCount = (j.artifacts || []).length;
+  // Phase 6 pipeline handling: two distinct flows meet in this panel.
+  //   - Legacy single-shot: uses job_status (DRAFT_READY / APPROVED / …).
+  //   - Phase 6 pipeline: uses `stage` (PLAN → ARTIFACTS → EXECUTE).
+  // We expose the buttons relevant to the current stage, and always allow
+  // re-running the Artifact Generator when the persisted artifacts are empty.
+  const inPipeline = ["PLAN", "ARTIFACTS", "EXECUTE", "REPORT", "DONE"].includes(stage);
+  // Fresh run: only offered on PLAN. Re-run: also offered on ARTIFACTS when
+  // the persisted set is empty (recovery path when the LLM returned unusable
+  // keys and _persist_agent_artifacts wrote 0 rows).
+  const canRunArtifacts =
+    stage === "PLAN" ||
+    (stage === "ARTIFACTS" && artifactCount === 0);
+  // Manual regen (even with existing artifacts, e.g. to try a better output).
+  const canRegenerateArtifacts = stage === "ARTIFACTS" && artifactCount > 0;
+  const canApprovePipelineArtifacts = stage === "ARTIFACTS" && artifactCount > 0;
+  const canApproveLegacy = !inPipeline && (st === "DRAFT_READY" || st === "APPROVED");
+  const canMaterializeLegacy = !inPipeline && (st === "APPROVED" || st === "MATERIALIZED");
+
+  const btnRunArtifacts = document.getElementById("btn-run-artifacts");
+  btnRunArtifacts.style.display = (canRunArtifacts || canRegenerateArtifacts) ? "" : "none";
+  btnRunArtifacts.textContent = canRegenerateArtifacts
+    ? "🔄 Regenerate artifacts"
+    : (artifactCount === 0 && stage === "ARTIFACTS"
+        ? "🔁 Re-run Artifact Generator"
+        : "Run Artifact Generator");
+  btnApprove.disabled = !(canApproveLegacy || canApprovePipelineArtifacts);
+  btnMaterialize.disabled = !canMaterializeLegacy;
+  btnMaterialize.style.display = inPipeline ? "none" : "";
+
+  setStatus(`loaded · ${inPipeline ? stage : st}`, st === "FAILED" ? "badge-fail" : "badge-success");
+  jobIdInput.value = j.job_id;
+  sessionStorage.setItem("xt.last_job_id", j.job_id);
+
+  if (st === "FAILED") {
+    const why = j.error_message || (j.validation_summary?.invalid_artifacts
+      ? `${j.validation_summary.invalid_artifacts}/${j.validation_summary.total_artifacts} artifacts failed validation. Expand each Artifact below to see errors.`
+      : "Generation failed.");
+    setMessage(
+      `${why}<br><a href="{% url 'panel_generate' %}" style="color:var(--blue);">Try again in Generate</a> — refine hints or description, then re-submit.`,
+      "var(--bad)"
+    );
+  } else if (stage === "ARTIFACTS" && artifactCount === 0) {
+    // Recovery message — surface the last persisted diagnostic if we saved one
+    // to stage_history, so operators can see WHY nothing landed.
+    const lastHist = ((j.stage_history || []).slice().reverse().find(h => (h||{}).diagnostic)) || null;
+    const diag = lastHist ? lastHist.diagnostic : null;
+    const diagLine = diag
+      ? `<br>Last agent output top-level keys: <code>${(diag.top_level_keys||[]).join(", ") || "(none)"}</code>; bundle counts: <code>${JSON.stringify(diag.bundle_counts||{})}</code>.`
+      : "";
+    setMessage(
+      `Artifact Generator ran but produced no persistable artifacts.${diagLine}<br>Click <strong>🔁 Re-run Artifact Generator</strong> to try again.`,
+      "var(--bad)"
+    );
+  } else if (canRunArtifacts) {
+    setMessage("Plan approved. Click <strong>Run Artifact Generator</strong> to produce the Cucumber files.");
+  } else if (canApprovePipelineArtifacts) {
+    setMessage("Artifacts generated. Review below, then Approve — this will materialize + advance the job to Execute. If they look wrong, click <strong>🔄 Regenerate artifacts</strong> to try again.");
+  } else if (canApproveLegacy) {
+    setMessage("Ready to approve.");
+  } else if (canMaterializeLegacy) {
+    setMessage("Ready to materialize.");
+  } else if (inPipeline && stage === "EXECUTE") {
+    setMessage(`Job is in stage EXECUTE. Head over to <a href="{% url 'panel_execute' %}" style="color:var(--blue);">Execute</a> to run Cucumber.`);
+  } else {
+    setMessage(`Job is in state ${st}${inPipeline ? " (stage " + stage + ")" : ""}; no action available here.`);
+  }
+}
+
+document.getElementById("btn-load").onclick = () => loadJob(jobIdInput.value.trim());
+jobPicker.onchange = () => { if (jobPicker.value) loadJob(jobPicker.value); };
+
+// Phase 6: "Run Artifact Generator" only appears when stage=PLAN. Kicks the
+// codegen agent (agent 4); rows land as GeneratedArtifact and the panel
+// re-renders with the new artifacts + INVALID indicators if the LLM slipped up.
+document.getElementById("btn-run-artifacts").onclick = async () => {
+  const id = jobIdInput.value.trim();
+  if (!id) return;
+  setStatus("running artifact generator…", "badge-info");
+  setMessage("Agent will produce .feature + step defs + page objects. Expect 60-120s.", "var(--muted)");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/artifacts/run/`, {method:"POST", headers:H, body:"{}"});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setStatus("failed", "badge-fail");
+    setMessage(j.error || j.detail || `HTTP ${r.status}`, "var(--bad)");
+    return;
+  }
+  // When the LLM returns nothing usable, expose the diagnostic to the operator
+  // instead of silently rendering "No artifacts on this job."
+  const diag = j.diagnostic || {};
+  if (diag.persisted_count === 0) {
+    const keys = (diag.top_level_keys || []).map(k => `<code>${String(k).replace(/</g,"&lt;")}</code>`).join(", ") || "<em>none</em>";
+    const counts = Object.entries(diag.bundle_counts || {})
+      .map(([k, v]) => `${k}=${v}`).join(", ") || "empty";
+    setStatus("failed", "badge-fail");
+    setMessage(
+      "Artifact agent returned no persistable artifacts.<br>" +
+      `Top-level keys the LLM emitted: ${keys}<br>` +
+      `Bundle counts (after alias normalization): ${counts}<br>` +
+      "See <strong>Django admin → GenerationJob → stage_history</strong> for the raw payload preview.",
+      "var(--bad)"
+    );
+    console.log("[stage/artifacts/run] diagnostic", diag);
+  }
+  await loadJob(id);
+};
+
+btnApprove.onclick = async () => {
+  const id = jobIdInput.value.trim();
+  if (!id) return;
+  // Route based on which flow the job is in. The pipeline endpoint approves
+  // AND materializes in one shot; legacy endpoint just approves and expects
+  // a follow-up Materialize click.
+  const jobResp = await fetch(`/test-generation/jobs/${id}/`);
+  const jobData = jobResp.ok ? await jobResp.json() : {};
+  const isPipelineArtifacts = jobData.stage === "ARTIFACTS";
+  const url = isPipelineArtifacts
+    ? `/test-generation/jobs/${id}/stage/artifacts/approve/`
+    : `/test-generation/jobs/${id}/approve/`;
+  const body = isPipelineArtifacts
+    ? {reviewer_notes: "Approved via dashboard"}
+    : {approved_by: "dashboard", notes: "Approved via dashboard"};
+  setStatus("approving…", "badge-info");
+  const r = await fetch(url, {method:"POST", headers:H, body: JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setStatus("approve failed", "badge-fail");
+    setMessage(j.error || j.detail || `HTTP ${r.status}`, "var(--bad)");
+    return;
+  }
+  if (isPipelineArtifacts) {
+    setMessage(`Approved + materialized. Advanced to ${j.stage}. → <a href="{% url 'panel_execute' %}" style="color:var(--blue);">Run tests</a>`, "var(--ok)");
+  } else {
+    setMessage(`Approved. Status = ${j.status}. Click Materialize to write files to disk.`, "var(--ok)");
+  }
+  await loadJob(id);
+};
+
+btnMaterialize.onclick = async () => {
+  const id = jobIdInput.value.trim();
+  if (!id) return;
+  setStatus("materializing…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/materialize/`, {
+    method:"POST", headers:H,
+    body: JSON.stringify({allow_overwrite: true})
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setStatus("materialize failed", "badge-fail");
+    const errs = (j.write_report?.errors || []).join("; ") || j.error || j.detail || `HTTP ${r.status}`;
+    setMessage(errs, "var(--bad)");
+    return;
+  }
+  const wrote = (j.written_files || []).length;
+  setMessage(`Materialized ${wrote} file${wrote===1?"":"s"}. → <a href="{% url 'panel_execute' %}">Run tests</a>`, "var(--ok)");
+  setStatus("materialized", "badge-success");
+  await loadJob(id);
+};
+
+// ---- boot -------------------------------------------------------------------
+(async () => {
+  const jobs = await loadJobList();
+  const stored = sessionStorage.getItem("xt.last_job_id");
+  const target = stored && jobs.find(j => j.job_id === stored) ? stored :
+                 (jobs[0] && jobs[0].job_id) || "";
+  if (target) {
+    jobPicker.value = target;
+    await loadJob(target);
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Generate · XT-Forge{% endblock %}
+{% block panel_title %}⚡ Generate test cases{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+    <div>
+      <h3 style="margin:0">Generate for the config you saved</h3>
+      <p style="margin:6px 0 0; color:var(--muted); font-size:13px;">
+        Sends the config from the previous step to <code>POST /test-generation/jobs/</code>.
+        The LLM runs synchronously; typical wall time is 30–90 s.
+      </p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button id="btn-generate">⚡ Generate</button>
+      <a href="{% url 'panel_config' %}" class="btn-outline"
+         style="text-decoration:none; background:#e2e8f0; color:var(--ink); padding:9px 14px; border-radius:8px; font-weight:600; font-size:13px;">
+        ← Back to Config
+      </a>
+      <span id="gen-status" class="badge badge-info">idle</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Config being submitted</h3>
+  <pre id="config-preview" class="log" style="height:180px">(fill in Config first)</pre>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3 style="margin:0">Job output</h3>
+    <span id="job-id" class="badge badge-info"></span>
+  </div>
+  <pre class="log" id="log">(no job yet)</pre>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+const doc = JSON.parse(sessionStorage.getItem("xt.job_doc") || "null");
+const statusEl = document.getElementById("gen-status");
+const logEl = document.getElementById("log");
+const jobIdBadge = document.getElementById("job-id");
+const previewEl = document.getElementById("config-preview");
+if (doc) previewEl.textContent = JSON.stringify(doc, null, 2);
+
+function setStatus(text, cls="badge-info") { statusEl.textContent = text; statusEl.className = "badge " + cls; }
+function appendLog(line) { logEl.textContent += line + "\n"; }
+
+async function pollUntilTerminal(jobId) {
+  const terminal = new Set(["DRAFT_READY", "APPROVED", "MATERIALIZED", "FAILED", "REJECTED"]);
+  const start = Date.now();
+  while (Date.now() - start < 5 * 60 * 1000) {
+    await new Promise(r => setTimeout(r, 3000));
+    const r = await fetch(`/test-generation/jobs/${jobId}/`);
+    if (!r.ok) {
+      appendLog(`[poll] HTTP ${r.status} — retrying`);
+      continue;
+    }
+    const j = await r.json();
+    const st = j.status || j.job_status;
+    appendLog(`[poll] status=${st}`);
+    if (terminal.has(st)) return j;
+  }
+  throw new Error("Timed out waiting for job to leave DRAFTING.");
+}
+
+document.getElementById("btn-generate").onclick = async () => {
+  if (!doc) {
+    setStatus("no config — go back to Config", "badge-fail");
+    return;
+  }
+  logEl.textContent = "";
+  setStatus("posting…", "badge-info");
+  appendLog(`[submit] POST /test-generation/jobs/`);
+  try {
+    const r = await fetch("/test-generation/jobs/", {method:"POST", headers:H, body: JSON.stringify(doc)});
+    const j = await r.json();
+    if (!r.ok) {
+      appendLog(`[submit] failed HTTP ${r.status}: ${JSON.stringify(j)}`);
+      setStatus("submit failed", "badge-fail");
+      return;
+    }
+    appendLog(`[submit] created job_id=${j.job_id} status=${j.status}`);
+    jobIdBadge.textContent = j.job_id;
+    sessionStorage.setItem("xt.last_job_id", j.job_id);
+    setStatus("drafting…", "badge-info");
+
+    const final = await pollUntilTerminal(j.job_id);
+    if (final.job_status === "FAILED") {
+      appendLog(`[error] ${final.error_message || "generation failed"}`);
+      setStatus("failed", "badge-fail");
+      return;
+    }
+    if (final.llm_notes?.length) {
+      appendLog(`\n[notes]\n${final.llm_notes.join("\n")}`);
+    }
+    setStatus(`ready · ${final.job_status}`, "badge-success");
+    appendLog(`\n✔ Open Review to approve and materialize.`);
+    setTimeout(() => { location.href = "{% url 'panel_review' %}"; }, 1200);
+  } catch (e) {
+    appendLog(`[error] ${e.message}`);
+    setStatus("error", "badge-fail");
+  }
+};
+</script>
+{% endblock %}

@@ -1,0 +1,488 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Execute · XT-Forge{% endblock %}
+{% block panel_title %}▶ Execute tests{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:280px;">
+      <label>Pipeline job (Cucumber)</label>
+      <select id="pipeline-picker"></select>
+    </div>
+    <button id="btn-run-cucumber">▶ Run Cucumber (up to 3 iterations)</button>
+    <button id="btn-push-jira" class="secondary" disabled>🚀 Push to Jira</button>
+    <span id="stage-status" class="badge badge-info">idle</span>
+    <span id="model-badge" class="badge badge-neutral" style="display:none;"></span>
+  </div>
+  <div id="stage-message" style="margin-top:10px; font-size:13px;"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Iterations</h3>
+  <div id="iterations"><em style="color:var(--muted); font-size:13px;">(no execute output yet)</em></div>
+</div>
+
+<div class="card">
+  <details>
+    <summary><strong>Legacy Playwright runner (manual)</strong> · use for pre-Phase-6 jobs</summary>
+    <div style="margin-top:10px;">
+      <div class="row cols-3">
+        <div style="grid-column: span 3;">
+          <label>Spec (materialized Playwright specs for this client)</label>
+          <select id="spec-picker"></select>
+        </div>
+        <div>
+          <label>Grep (optional)</label>
+          <input id="grep" type="text" placeholder="test title fragment">
+        </div>
+        <div>
+          <label>Workers</label>
+          <select id="workers"><option>1</option><option>2</option><option>4</option></select>
+        </div>
+        <div>
+          <label>Browser</label>
+          <select id="headed">
+            <option value="false">Headless</option>
+            <option value="true">Headed</option>
+          </select>
+        </div>
+        <div>
+          <label>Base URL (overrides .env for this run)</label>
+          <input id="base-url" type="url" placeholder="https://www.carnival.com">
+        </div>
+        <div style="grid-column: span 2; display:flex; align-items:end; gap:10px;">
+          <button id="btn-run">▶ Run Playwright</button>
+          <span id="exec-status" class="badge badge-info">idle</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <h4 style="margin:0 0 6px;">Live Playwright log</h4>
+        <pre class="log" id="log">(no run yet)</pre>
+      </div>
+    </div>
+  </details>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+// ---- Pipeline flow ---------------------------------------------------------
+const $picker = document.getElementById("pipeline-picker");
+const $status = () => document.getElementById("stage-status");
+const $message = () => document.getElementById("stage-message");
+const $iterations = () => document.getElementById("iterations");
+const $btnPush = document.getElementById("btn-push-jira");
+
+let pollTimer = null;
+
+function setStatus(text, cls="badge-info") { $status().textContent = text; $status().className = "badge " + cls; }
+function setMessage(msg, color="var(--muted)") { $message().innerHTML = `<span style="color:${color};">${msg}</span>`; }
+
+function currentPipelineJobId() {
+  return $picker.value || sessionStorage.getItem("xt.pipeline_job_id") || "";
+}
+
+// Render one iteration card (extracted so previous-run expanders can reuse it).
+function renderIterationCard(it) {
+  const scenarios = (it.scenarios || []);
+  const passed = scenarios.filter(s => s.status === "passed").length;
+  const failed = scenarios.filter(s => s.status === "failed").length;
+  const banner = it.all_passed
+    ? `<span class="badge badge-success">GREEN</span>`
+    : (it.error ? `<span class="badge badge-fail">ERROR</span>` : `<span class="badge badge-fail">RED</span>`);
+  const patches = (it.patches_applied || []).map(p => `<code>${p.replace(/</g,"&lt;")}</code>`).join(", ");
+  return `
+    <div class="card" style="margin:0 0 10px 0; border-left:4px solid ${it.all_passed?"var(--ok)":"var(--bad)"};">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <strong>Iteration ${it.iteration}</strong>
+        ${banner}
+        <span style="font-size:12px; color:var(--muted);">rc=${it.return_code ?? "?"} · ${passed}/${passed+failed} scenarios passed</span>
+        ${it.runner_job_id ? `<a href="/runners/jobs/${it.runner_job_id}/stream/" target="_blank" style="font-size:12px; color:var(--blue);">(open live log)</a>` : ""}
+      </div>
+      ${it.error ? `<div style="color:var(--bad); font-size:12px; margin-top:6px;">${it.error}</div>` : ""}
+      ${it.diagnosis ? `<div style="font-size:12px; color:var(--warn); margin-top:6px;"><strong>Root-cause diagnosis:</strong> ${it.diagnosis.replace(/</g,"&lt;")}</div>` : ""}
+      ${patches ? `<div style="font-size:12px; margin-top:4px;"><strong>Patches applied:</strong> ${patches}</div>` : ""}
+      ${scenarios.length ? `
+        <details style="margin-top:8px;">
+          <summary>${scenarios.length} scenario result(s)</summary>
+          <ul style="font-size:12px;">
+            ${scenarios.map(s => {
+              const rr = s.regression_report || null;
+              let rrBlock = "";
+              if (rr && rr.ui_change_level) {
+                const level = String(rr.ui_change_level);
+                const kind = level === "UNCHANGED" ? "badge-success"
+                  : level === "MAJOR_CHANGE" || level === "ELEMENT_REMOVED" ? "badge-fail"
+                  : "badge-info";
+                const added = (rr.added_selectors || []).slice(0, 5);
+                const removed = (rr.removed_selectors || []).slice(0, 5);
+                rrBlock = `
+                  <div style="margin-left:20px; margin-top:4px; font-size:11px;">
+                    <span class="badge ${kind}" style="font-size:10px;">UI ${level}</span>
+                    ${rr.reason ? `<span style="color:var(--muted); margin-left:6px;">${String(rr.reason).replace(/</g,"&lt;")}</span>` : ""}
+                    ${added.length ? `<div style="color:var(--good); margin-top:2px;"><strong>+${added.length}</strong> new selector(s): ${added.map(x => `<code>${String(x).replace(/</g,"&lt;")}</code>`).join(", ")}</div>` : ""}
+                    ${removed.length ? `<div style="color:var(--bad); margin-top:2px;"><strong>−${removed.length}</strong> removed selector(s): ${removed.map(x => `<code>${String(x).replace(/</g,"&lt;")}</code>`).join(", ")}</div>` : ""}
+                  </div>`;
+              }
+              return `
+              <li>
+                <span class="badge ${s.status==='passed'?'badge-success':'badge-fail'}">${s.status}</span>
+                <code>${(s.feature||'').replace(/</g,"&lt;")}</code> · ${(s.name||'').replace(/</g,"&lt;")}
+                ${s.step_failure ? `<div style="margin-left:20px; color:var(--bad); font-size:11px;">
+                  ${(s.step_failure.keyword||"").replace(/</g,"&lt;")}${(s.step_failure.name||"").replace(/</g,"&lt;")}: ${(s.step_failure.error_message||"").slice(0,200).replace(/</g,"&lt;")}</div>` : ""}
+                ${rrBlock}
+              </li>`;
+            }).join("")}
+          </ul>
+        </details>` : ""}
+      ${(it.tool_trace && it.tool_trace.length) ? `
+        <details style="margin-top:8px;">
+          <summary>🔧 Root-cause fixer tool trace (${it.tool_trace.length} call${it.tool_trace.length===1?"":"s"})</summary>
+          <ol style="font-size:12px; margin-top:4px;">
+            ${it.tool_trace.map(t => `
+              <li>
+                <strong>${(t.tool||"").replace(/</g,"&lt;")}</strong>
+                <span style="color:var(--muted); font-size:11px;">turn ${t.turn ?? "?"}</span>
+                <details style="display:inline-block; margin-left:6px;">
+                  <summary style="font-size:11px; color:var(--muted); cursor:pointer;">args / result</summary>
+                  <pre style="font-size:11px; margin:4px 0 0; white-space:pre-wrap; word-break:break-all;">args: ${JSON.stringify(t.args||{}).replace(/</g,"&lt;")}
+result: ${JSON.stringify(t.result_summary||{}).replace(/</g,"&lt;")}</pre>
+                </details>
+              </li>`).join("")}
+          </ol>
+        </details>` : ""}
+    </div>`;
+}
+
+function renderIterations(output) {
+  const its = (output && output.iterations) || [];
+  const previousRuns = (output && output.previous_runs) || [];
+  const smokeMode = !!(output && output.smoke_mode);
+  const smokeFailed = !!(output && output.smoke_mode_failed);
+  const el = $iterations();
+
+  let html = "";
+
+  // Phase 6.5.3 — Smoke-mode failure banner. When a previously-green
+  // job was re-run in smoke mode and iteration 1 failed, show an
+  // opinionated banner: this is a real regression signal, not an
+  // invitation to auto-heal. Operator decides.
+  if (smokeFailed) {
+    const jobId = currentPipelineJobId();
+    html += `
+      <div class="card" style="margin:0 0 12px 0; border-left:4px solid var(--warn); background:#fef3c7;">
+        <h3 style="margin:0 0 8px 0; color:var(--warn);">⚠ Smoke run failed on iteration 1</h3>
+        <p style="margin:0 0 8px 0; font-size:13px;">
+          This job was previously <strong>GREEN</strong>, so we ran the existing test as-is
+          (Azure-Pipeline-style, no LLM). The test failed. This is almost always a
+          <strong>real UI regression</strong> — not a stale locator. Review the failure below.
+        </p>
+        <p style="margin:0; font-size:13px;">
+          <strong>Options:</strong>
+          Push the failure to Jira as-is (top-right button), OR
+          click <button id="btn-heal-retry" style="margin:0 4px;">▶ Heal &amp; retry</button>
+          to kick a full LLM-assisted repair loop.
+        </p>
+      </div>`;
+  }
+
+  // Phase 6.5.2 — Previous runs expander. Older runs collapsed by
+  // default so the current run stays visible without scrolling.
+  if (previousRuns.length) {
+    html += `
+      <details style="margin:0 0 12px 0;">
+        <summary style="cursor:pointer; padding:8px; background:var(--blue-soft); border-radius:6px; font-weight:500;">
+          📜 Previous runs (${previousRuns.length})
+        </summary>
+        <div style="margin-top:8px;">
+          ${previousRuns.slice().reverse().map(pr => {
+            const iters = (pr.iterations || []);
+            const stateBadge = pr.final_state === "GREEN"
+              ? `<span class="badge badge-success">GREEN</span>`
+              : pr.final_state === "RED" || pr.final_state === "HUMAN_REVIEW_NEEDED"
+              ? `<span class="badge badge-fail">${pr.final_state}</span>`
+              : `<span class="badge badge-info">${pr.final_state || "—"}</span>`;
+            const finished = pr.finished_on ? new Date(pr.finished_on).toLocaleString() : "";
+            const smokeTag = pr.smoke_mode ? `<span class="badge badge-info" style="font-size:10px;">smoke</span>` : "";
+            return `
+              <details style="margin:0 0 8px 0; margin-left:12px;">
+                <summary style="cursor:pointer;">
+                  Run #${pr.run_index ?? "?"} ${stateBadge} ${smokeTag}
+                  <span style="color:var(--muted); font-size:12px; margin-left:8px;">
+                    ${iters.length} iteration${iters.length===1?"":"s"}
+                    ${finished ? `· ${finished}` : ""}
+                  </span>
+                </summary>
+                <div style="margin-top:8px;">
+                  ${iters.length ? iters.map(renderIterationCard).join("") : `<em style="color:var(--muted); font-size:12px;">(empty run)</em>`}
+                </div>
+              </details>`;
+          }).join("")}
+        </div>
+      </details>`;
+  }
+
+  // Current-run header (only shown when there ARE previous runs OR the
+  // current run has iterations; keeps first-run pages uncluttered).
+  if (previousRuns.length && its.length) {
+    const modeTag = smokeMode
+      ? `<span class="badge badge-info" style="font-size:11px;">smoke mode · no LLM</span>`
+      : "";
+    html += `<h3 style="margin:12px 0 8px 0;">Current run ${modeTag}</h3>`;
+  }
+
+  if (!its.length && !previousRuns.length && !smokeFailed) {
+    el.innerHTML = `<em style="color:var(--muted); font-size:13px;">(no iterations yet — click Run)</em>`;
+    return;
+  }
+  html += its.map(renderIterationCard).join("");
+  el.innerHTML = html;
+
+  // Wire the Heal & retry button if present (rendered inside the banner).
+  const healBtn = document.getElementById("btn-heal-retry");
+  if (healBtn) {
+    healBtn.onclick = async () => {
+      healBtn.disabled = true;
+      healBtn.textContent = "enqueuing…";
+      const id = currentPipelineJobId();
+      const r = await fetch(`/test-generation/jobs/${id}/stage/execute/run/`, {method:"POST", headers:H, body:"{}"});
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        alert(`Heal & retry failed: ${j.error || `HTTP ${r.status}`}`);
+        healBtn.disabled = false;
+        healBtn.textContent = "▶ Heal & retry";
+        return;
+      }
+      // Re-render will happen via polling; server now infers full heal
+      // mode because the current state is RED/HUMAN_REVIEW_NEEDED.
+      pollUntilDone(id);
+    };
+  }
+}
+
+function paintExecuteModelBadge(job) {
+  const badge = document.getElementById("model-badge");
+  if (!badge) return;
+  const latest = [...(job.stage_history || [])].reverse()
+    .find(h => h && h.decision === "llm_call" && h.agent === "root_cause_fixer");
+  if (latest && latest.model) {
+    badge.textContent = `⚡ ${latest.model}`;
+    badge.style.display = "";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+async function loadPipelineJobList() {
+  const r = await fetch("/test-generation/jobs/");
+  if (!r.ok) return [];
+  const rows = await r.json();
+  // Only jobs that have entered the pipeline should show here.
+  $picker.innerHTML = `<option value="">— select —</option>` + rows.map(j =>
+    `<option value="${j.job_id}">${(j.feature_name||"").replace(/</g,"&lt;")} · ${j.status}</option>`
+  ).join("");
+  return rows;
+}
+
+async function loadPipelineJob(id) {
+  if (!id) return null;
+  const r = await fetch(`/test-generation/jobs/${id}/`);
+  if (!r.ok) { setStatus("load failed","badge-fail"); return null; }
+  const j = await r.json();
+  sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
+  const stage = j.stage || "";
+  const exec = j.stage_execute_output || {};
+  const finalState = exec.final_state || "";
+  const canRun = stage === "EXECUTE" || stage === "HUMAN_REVIEW_NEEDED";
+  const canPush = finalState === "GREEN" && !!j.jira_issue_key;
+  document.getElementById("btn-run-cucumber").disabled = !canRun;
+  $btnPush.disabled = !canPush;
+  setStatus(`stage=${stage}${finalState?" · "+finalState:""}`,
+            finalState === "GREEN" ? "badge-success"
+            : stage === "HUMAN_REVIEW_NEEDED" ? "badge-fail" : "badge-info");
+  renderIterations(exec);
+  paintExecuteModelBadge(j);
+
+  if (stage === "DONE") {
+    setMessage(`Report was pushed to Jira · issue ${j.jira_issue_key || "?"}.`, "var(--ok)");
+  } else if (stage === "HUMAN_REVIEW_NEEDED") {
+    setMessage("All 3 auto-retries used and tests still failing. Review the iterations above, patch by hand from the Review panel if needed, then re-run.", "var(--bad)");
+  } else if (finalState === "GREEN") {
+    setMessage("Tests passed. Click Push to Jira to send the report + attachments.", "var(--ok)");
+  } else if (stage === "EXECUTE" && (j.execute_iteration || 0) === 0 && (exec.iterations || []).length === 0) {
+    // Job is enqueued but no iterations yet. If it's been more than 90s
+    // since the last enqueue was recorded, the qcluster worker is
+    // probably down — surface an actionable hint instead of the vague
+    // "The Executor will retry up to 3 times" default.
+    const lastEnqueue = [...(j.stage_history || [])].reverse().find(h =>
+      h && h.agent === "executor" && ["enqueued","smoke-rerun","re-executed"].includes(h.decision)
+    );
+    let ageSec = null;
+    if (lastEnqueue && lastEnqueue.recorded_on) {
+      try {
+        ageSec = Math.round((Date.now() - new Date(lastEnqueue.recorded_on).getTime()) / 1000);
+      } catch { /* ignore */ }
+    }
+    if (ageSec !== null && ageSec > 90) {
+      setMessage(
+        `Enqueued ${ageSec}s ago but no iterations yet. The Django-Q worker is likely down. ` +
+        `Run <code>python manage.py qcluster</code> in a terminal to process this job.`,
+        "var(--bad)"
+      );
+    } else {
+      setMessage(`Executor is running (enqueued ${ageSec ?? "?"}s ago). Polling every 4s…`, "var(--muted)");
+    }
+  } else if (canRun) {
+    setMessage(`Ready to run Cucumber against features/${(j.client?.slug)||"<slug>"}/. The Executor will retry up to 3 times, patching on failure.`, "var(--muted)");
+  } else {
+    setMessage(`Job stage is ${stage}. Advance it through Review → Approve first.`, "var(--muted)");
+  }
+  return j;
+}
+
+async function pollUntilDone(id) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const j = await loadPipelineJob(id);
+    if (!j) { clearInterval(pollTimer); return; }
+    const stage = j.stage || "";
+    if (stage === "REPORT" || stage === "DONE" || stage === "HUMAN_REVIEW_NEEDED") {
+      clearInterval(pollTimer);
+    }
+  }, 4000);
+}
+
+$picker.onchange = async () => {
+  const id = $picker.value;
+  const j = await loadPipelineJob(id);
+  // Auto-resume polling when switching to an in-flight job (same fix
+  // as the initial page-load path — polling should follow the job,
+  // not the button click that started it).
+  if (j && (j.stage || "") === "EXECUTE") {
+    pollUntilDone(id);
+  }
+};
+
+document.getElementById("btn-run-cucumber").onclick = async () => {
+  const id = currentPipelineJobId(); if (!id) { setMessage("Pick a pipeline job first.", "var(--bad)"); return; }
+  setStatus("enqueuing…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/execute/run/`, {method:"POST", headers:H, body:"{}"});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { setStatus("failed to enqueue", "badge-fail"); setMessage(j.error || `HTTP ${r.status}`, "var(--bad)"); return; }
+  setStatus("running (poll)", "badge-info");
+  setMessage("Executor is running. Cucumber output streams into individual runner-job logs; per-iteration status appears below.", "var(--muted)");
+  pollUntilDone(id);
+};
+
+$btnPush.onclick = async () => {
+  const id = currentPipelineJobId(); if (!id) return;
+  $btnPush.disabled = true;
+  setStatus("pushing to Jira…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/execute/approve/`, {method:"POST", headers:H, body:"{}"});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setStatus("push failed", "badge-fail");
+    setMessage(j.error || `HTTP ${r.status}`, "var(--bad)");
+    $btnPush.disabled = false;
+    return;
+  }
+  setStatus("pushed", "badge-success");
+  const attaches = (j.attachments || []).length;
+  const errs = (j.attach_errors || []).length;
+  setMessage(
+    `Comment posted to ${j.jira_issue_key}. ${attaches} attachment(s)${errs?`, ${errs} error(s)`:""}. Headline: <em>${(j.headline||"").replace(/</g,"&lt;")}</em>`,
+    errs ? "var(--warn)" : "var(--ok)",
+  );
+  await loadPipelineJob(id);
+};
+
+(async () => {
+  const jobs = await loadPipelineJobList();
+  const stored = sessionStorage.getItem("xt.pipeline_job_id");
+  const target = stored && jobs.find(j => j.job_id === stored) ? stored : (jobs[0] && jobs[0].job_id) || "";
+  if (target) {
+    $picker.value = target;
+    const j = await loadPipelineJob(target);
+    // Phase 6.5 follow-up — Auto-resume polling on page load whenever the
+    // job is in flight. Fixes the case where an operator navigates in
+    // from the Jobs dashboard AFTER kicking Re-run / Run smoke, and the
+    // panel would otherwise show a stale snapshot forever because polling
+    // was only started from btn-run-cucumber.onclick.
+    if (j) {
+      const stage = j.stage || "";
+      if (stage === "EXECUTE") {
+        setStatus("running (poll)", "badge-info");
+        setMessage("Executor is running. Polling for iteration updates every 4s.", "var(--muted)");
+        pollUntilDone(target);
+      }
+    }
+  }
+})();
+
+// -----------------------------------------------------------------------
+// Legacy Playwright runner — unchanged behavior, tucked into a details block
+// -----------------------------------------------------------------------
+const legacyStatus = document.getElementById("exec-status");
+const legacyLog = document.getElementById("log");
+const specPicker = document.getElementById("spec-picker");
+const baseUrlInput = document.getElementById("base-url");
+let legacyEs = null;
+function setLegacyStatus(msg, cls="badge-info") { legacyStatus.textContent = msg; legacyStatus.className = "badge " + cls; }
+function appendLegacy(line) { legacyLog.textContent += line + "\n"; }
+
+async function loadSpecs() {
+  specPicker.innerHTML = `<option value="">All materialized specs (this client)</option>`;
+  const r = await fetch("/test-generation/jobs/");
+  if (!r.ok) { return; }
+  const jobs = await r.json();
+  const materialized = jobs.filter(j => (j.status || j.job_status) === "MATERIALIZED");
+  for (const j of materialized) {
+    const detail = await fetch(`/test-generation/jobs/${j.job_id}/`).then(r => r.ok ? r.json() : null);
+    if (!detail) continue;
+    for (const art of (detail.materialized_manifest || detail.artifacts || [])) {
+      const p = art.path || art.relative_path;
+      if (p && p.endsWith(".spec.ts")) {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = `${p}  (job ${j.job_id.slice(0,8)})`;
+        specPicker.appendChild(opt);
+      }
+    }
+  }
+}
+
+const jobDoc = JSON.parse(sessionStorage.getItem("xt.job_doc") || "null");
+if (jobDoc?.base_url) baseUrlInput.value = jobDoc.base_url;
+
+document.getElementById("btn-run").onclick = async () => {
+  setLegacyStatus("enqueuing…", "badge-info");
+  legacyLog.textContent = "";
+  const body = {
+    spec: specPicker.value,
+    grep: document.getElementById("grep").value,
+    workers: parseInt(document.getElementById("workers").value, 10),
+    headed: document.getElementById("headed").value === "true",
+    base_url: baseUrlInput.value.trim(),
+  };
+  const r = await fetch("/runners/execute/", {method:"POST", headers:H, body: JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { setLegacyStatus("failed to enqueue","badge-fail"); appendLegacy(`[error] HTTP ${r.status}: ${JSON.stringify(j)}`); return; }
+  setLegacyStatus("running", "badge-success");
+  if (legacyEs) legacyEs.close();
+  legacyEs = new EventSource(`/runners/jobs/${j.id}/stream/`);
+  legacyEs.addEventListener("log",  e => appendLegacy(e.data));
+  legacyEs.addEventListener("done", e => {
+    appendLegacy(`\n--- ${e.data} ---`);
+    const ok = e.data.startsWith("SUCCESS");
+    setLegacyStatus(ok ? "success" : "failed", "badge " + (ok ? "badge-success" : "badge-fail"));
+    legacyEs.close();
+  });
+  legacyEs.addEventListener("error", () => legacyEs.close());
+};
+
+loadSpecs();
+</script>
+{% endblock %}

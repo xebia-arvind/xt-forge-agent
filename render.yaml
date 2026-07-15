@@ -1,0 +1,153 @@
+# Render Blueprint for XT-Forge.
+#
+# Creates four resources: a web service (gunicorn), a worker service
+# (django-q2 qcluster), a managed Postgres database, and a managed Redis
+# key-value store. Web and worker share the SAME Docker image — only the
+# start command differs.
+#
+# First-time setup:
+#   1. Push this repo to https://github.com/xebia-arvind/xt-forge-agent
+#   2. Render → New + → Blueprint → point at the repo.
+#   3. In the dashboard, fill the two sync:false secrets on BOTH services:
+#         OPENAI_API_KEY   — fresh key from platform.openai.com
+#         FERNET_KEY       — python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#   4. Wait ~10 min for the first build. Then open a Render Shell on the
+#      web service and run:
+#         cd /app/ai-healer-django/flaky_healer && python manage.py createsuperuser
+
+services:
+  # ------ Web (Django + gunicorn) ------
+  - type: web
+    name: xt-forge-web
+    env: docker
+    plan: free
+    dockerfilePath: ./ai-healer-django/Dockerfile
+    dockerContext: .
+    healthCheckPath: /admin/login/
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: PUBLIC_BASE_URL
+        # Replace with your actual Render URL after the first deploy.
+        value: "https://xt-forge-web.onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: xt-forge-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: xt-forge-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: xt-forge-redis
+          property: port
+
+      # --- LLM + pipeline knobs (mirror flaky_healer/.env) ---
+      - key: OPENAI_API_KEY
+        sync: false             # set manually in dashboard — never committed
+      - key: FERNET_KEY
+        sync: false             # set manually in dashboard — Jira token AES key
+      - key: OPENAI_TOOL_USE
+        value: "on"
+      - key: OPENAI_MODEL_FEATURE
+        value: "gpt-4o-mini"
+      - key: OPENAI_MODEL_MANUAL_TESTS
+        value: "gpt-4o-mini"
+      - key: OPENAI_MODEL_PLAN
+        value: "gpt-4o"
+      - key: OPENAI_MODEL_ARTIFACTS
+        value: "gpt-4o"
+      - key: OPENAI_MODEL_FIXER
+        value: "gpt-4o"
+
+      # --- Pipeline flags ---
+      - key: XT_FORGE_REQUIRE_UI_KNOWLEDGE
+        value: "true"
+      - key: SELECTOR_VERIFY_ENABLED
+        value: "on"
+      - key: USE_HEALING_CACHE
+        value: "true"
+      - key: HEALING_CACHE_MIN_CONFIDENCE
+        value: "0.30"
+      - key: TEST_GEN_USE_UI_KNOWLEDGE
+        value: "false"
+      - key: TEST_GEN_ENABLE_CODEGEN
+        value: "true"
+
+  # ------ Worker (django-q2 qcluster) ------
+  - type: worker
+    name: xt-forge-worker
+    env: docker
+    plan: free
+    dockerfilePath: ./ai-healer-django/Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    dockerCommand: sh -c "cd /app/ai-healer-django/flaky_healer && python manage.py qcluster"
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: xt-forge-web
+          envVarKey: DJANGO_SECRET_KEY
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: "*"              # worker doesn't serve HTTP; wildcard is fine
+      - key: DATABASE_URL
+        fromDatabase:
+          name: xt-forge-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: xt-forge-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: xt-forge-redis
+          property: port
+
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FERNET_KEY
+        sync: false
+      - key: OPENAI_TOOL_USE
+        value: "on"
+      - key: OPENAI_MODEL_FEATURE
+        value: "gpt-4o-mini"
+      - key: OPENAI_MODEL_MANUAL_TESTS
+        value: "gpt-4o-mini"
+      - key: OPENAI_MODEL_PLAN
+        value: "gpt-4o"
+      - key: OPENAI_MODEL_ARTIFACTS
+        value: "gpt-4o"
+      - key: OPENAI_MODEL_FIXER
+        value: "gpt-4o"
+      - key: XT_FORGE_REQUIRE_UI_KNOWLEDGE
+        value: "true"
+      - key: SELECTOR_VERIFY_ENABLED
+        value: "on"
+      - key: USE_HEALING_CACHE
+        value: "true"
+
+# ------ Postgres (free 90-day, then $7/mo) ------
+databases:
+  - name: xt-forge-db
+    plan: free
+    databaseName: xt_forge
+    user: xt_forge
+
+# ------ Redis (25 MB free tier — enough for a demo) ------
+keyValueStores:
+  - name: xt-forge-redis
+    plan: free
+    ipAllowList: []             # only reachable from services in this account

@@ -1,0 +1,168 @@
+{% extends "test_analytics/_layout.html" %}
+{% block title %}Manual Tests · XT-Forge{% endblock %}
+{% block panel_title %}📋 Manual Test Author review{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:280px;">
+      <label>Pipeline job</label>
+      <select id="job-picker"></select>
+    </div>
+    <button id="btn-run">Run Manual Test Author</button>
+    <button id="btn-approve" class="secondary" disabled>Approve →</button>
+    <span id="stage-status" class="badge badge-info">idle</span>
+    <span id="model-badge" class="badge badge-neutral" style="display:none;"></span>
+  </div>
+  <div id="stage-message" style="margin-top:10px; font-size:13px;"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Manual test cases</h3>
+  <div id="mt-list" style="display:flex; flex-direction:column; gap:10px;">
+    <em style="color:var(--muted); font-size:13px;">(none yet — Run the agent)</em>
+  </div>
+  <div style="margin-top:12px;">
+    <label>Reviewer notes (optional)</label>
+    <input id="mt-notes" type="text">
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Raw agent output</h3>
+  <pre id="raw-json" class="log" style="height:220px">(no output yet)</pre>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const csrftoken = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))?.split("=")[1] || "";
+const H = {"Content-Type":"application/json","X-CSRFToken":csrftoken};
+
+const $status = () => document.getElementById("stage-status");
+const $message = () => document.getElementById("stage-message");
+const $raw = () => document.getElementById("raw-json");
+const $picker = document.getElementById("job-picker");
+const $list = () => document.getElementById("mt-list");
+const $btnApprove = document.getElementById("btn-approve");
+
+function setStatus(text, cls="badge-info") { $status().textContent = text; $status().className = "badge " + cls; }
+function setMessage(msg, color="var(--muted)") { $message().innerHTML = `<span style="color:${color};">${msg}</span>`; }
+
+function currentJobId() { return $picker.value || sessionStorage.getItem("xt.pipeline_job_id") || ""; }
+
+function paintList(output) {
+  const tests = (output && output.manual_tests) || [];
+  if (!tests.length) {
+    $list().innerHTML = `<em style="color:var(--muted); font-size:13px;">Agent produced no manual tests.</em>`;
+    return;
+  }
+  $list().innerHTML = tests.map((t, idx) => `
+    <div class="card" style="margin:0; border-left:4px solid var(--blue);">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input data-mt-idx="${idx}" data-field="id" type="text" value="${(t.id||'').replace(/"/g,'&quot;')}" style="width:80px;">
+        <input data-mt-idx="${idx}" data-field="title" type="text" value="${(t.title||'').replace(/"/g,'&quot;')}" style="flex:1;">
+        <select data-mt-idx="${idx}" data-field="type" style="width:140px;">
+          ${["SMOKE","NEGATIVE","REGRESSION"].map(v => `<option value="${v}" ${v===(t.type||"SMOKE")?"selected":""}>${v}</option>`).join("")}
+        </select>
+      </div>
+      <div class="row cols-3" style="margin-top:10px;">
+        <div><label>Given (one per line)</label><textarea data-mt-idx="${idx}" data-field="given" rows="4">${(t.given||[]).join("\n").replace(/</g,"&lt;")}</textarea></div>
+        <div><label>When (one per line)</label><textarea data-mt-idx="${idx}" data-field="when" rows="4">${(t.when||[]).join("\n").replace(/</g,"&lt;")}</textarea></div>
+        <div><label>Then (one per line)</label><textarea data-mt-idx="${idx}" data-field="then" rows="4">${(t.then||[]).join("\n").replace(/</g,"&lt;")}</textarea></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function collectEdited() {
+  const rows = document.querySelectorAll('[data-mt-idx]');
+  const bucket = {};
+  rows.forEach(el => {
+    const idx = el.dataset.mtIdx;
+    const field = el.dataset.field;
+    bucket[idx] = bucket[idx] || {};
+    if (["given","when","then"].includes(field)) {
+      bucket[idx][field] = el.value.split("\n").map(s => s.trim()).filter(Boolean);
+    } else {
+      bucket[idx][field] = el.value;
+    }
+  });
+  return { manual_tests: Object.keys(bucket).sort((a,b) => a-b).map(k => bucket[k]) };
+}
+
+async function loadJobList() {
+  const r = await fetch("/test-generation/jobs/");
+  if (!r.ok) { setStatus("failed to list jobs", "badge-fail"); return []; }
+  const rows = await r.json();
+  $picker.innerHTML = `<option value="">— select —</option>` + rows.map(j =>
+    `<option value="${j.job_id}">${(j.feature_name||"").replace(/</g,"&lt;")} · ${j.status}</option>`
+  ).join("");
+  return rows;
+}
+
+function paintModelBadge(job, agentName) {
+  const badge = document.getElementById("model-badge");
+  if (!badge) return;
+  const latest = [...(job.stage_history || [])].reverse()
+    .find(h => h && h.decision === "llm_call" && h.agent === agentName);
+  if (latest && latest.model) {
+    badge.textContent = `⚡ ${latest.model}`;
+    badge.style.display = "";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+async function loadJob(id) {
+  if (!id) return;
+  const r = await fetch(`/test-generation/jobs/${id}/`);
+  if (!r.ok) { setStatus("load failed", "badge-fail"); return; }
+  const j = await r.json();
+  const canApprove = j.stage === "MANUAL_TESTS";
+  $btnApprove.disabled = !canApprove;
+  setStatus(`stage=${j.stage}`, canApprove ? "badge-success" : "badge-info");
+  paintModelBadge(j, "manual_test_author");
+  paintList(j.stage_manual_tests_output || {});
+  $raw().textContent = j.stage_manual_tests_output ? JSON.stringify(j.stage_manual_tests_output, null, 2) : "(agent has not run yet)";
+  sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
+}
+
+$picker.onchange = () => loadJob($picker.value);
+
+document.getElementById("btn-run").onclick = async () => {
+  const id = currentJobId(); if (!id) { setMessage("Pick a job first.", "var(--bad)"); return; }
+  setStatus("running…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/manual-tests/run/`, {method:"POST", headers:H, body:"{}"});
+  const j = await r.json();
+  if (!r.ok) { setStatus("failed", "badge-fail"); setMessage(j.error || `HTTP ${r.status}`, "var(--bad)"); return; }
+  paintList(j.output);
+  $raw().textContent = JSON.stringify(j.output, null, 2);
+  setStatus(`stage=${j.stage}`, "badge-success");
+  $btnApprove.disabled = false;
+  setMessage("Edit the test cases inline if needed, then Approve.", "var(--muted)");
+};
+
+$btnApprove.onclick = async () => {
+  const id = currentJobId(); if (!id) return;
+  const edited = collectEdited();
+  const reviewer_notes = document.getElementById("mt-notes").value;
+  setStatus("approving…", "badge-info");
+  const r = await fetch(`/test-generation/jobs/${id}/stage/manual-tests/approve/`, {
+    method:"POST", headers:H, body: JSON.stringify({edited_output: edited, reviewer_notes}),
+  });
+  const j = await r.json();
+  if (!r.ok) { setStatus("failed", "badge-fail"); setMessage(j.error || `HTTP ${r.status}`, "var(--bad)"); return; }
+  setStatus(`stage=${j.stage}`, "badge-success");
+  setMessage(`Advanced to ${j.stage}. Redirecting to Plan Review…`, "var(--ok)");
+  setTimeout(() => { location.href = "{% url 'panel_plan_review' %}"; }, 700);
+};
+
+(async () => {
+  const jobs = await loadJobList();
+  const stored = sessionStorage.getItem("xt.pipeline_job_id");
+  const target = stored && jobs.find(j => j.job_id === stored) ? stored : (jobs[0] && jobs[0].job_id) || "";
+  if (target) { $picker.value = target; await loadJob(target); }
+})();
+</script>
+{% endblock %}

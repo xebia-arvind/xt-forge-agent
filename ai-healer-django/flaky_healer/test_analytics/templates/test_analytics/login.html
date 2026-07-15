@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Login</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe4f0;
+      --primary: #1d4ed8;
+      --error-bg: #fee2e2;
+      --error-ink: #991b1b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 20% 10%, #eef4ff, #f8fbff 42%, var(--bg) 100%);
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+      color: var(--ink);
+    }
+
+    .card {
+      width: min(420px, 92vw);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 14px 30px rgba(2, 6, 23, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .error {
+      margin-bottom: 10px;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: var(--error-bg);
+      color: var(--error-ink);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <form method="post" class="card">
+    {% csrf_token %}
+    <h1>Dashboard Login</h1>
+    <p>Use your Django user credentials to access analytics dashboard.</p>
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="username">Username</label>
+    <input id="username" name="username" required autocomplete="username" />
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password" />
+
+    <button type="submit">Sign In</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,624 @@
+- generic [active] [ref=e1]:
+  - link "Skip to Main Content" [ref=e2]:
+    - /url: "#ccl-mainContainer"
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - region "Notifications Bars" [ref=e6]:
+        - alert [ref=e7]:
+          - generic [ref=e10]:
+            - generic [ref=e11]: IMPORTANT NOTICE
+            - button "Close IMPORTANT NOTICE" [ref=e12] [cursor=pointer]
+            - link "Get important information on a privacy event that may impact you." [ref=e16] [cursor=pointer]:
+              - /url: https://www.carnivalcorp.com/wp-content/uploads/2026/05/Website-Notice-Substitute-Notice-05.27.26.pdf
+      - banner [ref=e18]:
+        - generic [ref=e19]:
+          - link "Carnival Home Page" [ref=e21] [cursor=pointer]:
+            - /url: https://www.carnival.com
+          - navigation [ref=e23]:
+            - list [ref=e24]:
+              - listitem [ref=e25]:
+                - button "Plan a Cruise" [ref=e26] [cursor=pointer]
+              - listitem [ref=e27]:
+                - button "Our Ships" [ref=e28] [cursor=pointer]
+              - listitem [ref=e29]:
+                - button "Destinations" [ref=e30] [cursor=pointer]
+              - listitem [ref=e31]:
+                - button "Deals" [ref=e32] [cursor=pointer]
+              - listitem [ref=e33]:
+                - button "Loyalty" [ref=e34] [cursor=pointer]
+              - listitem [ref=e35]:
+                - button "Manage Bookings" [ref=e36] [cursor=pointer]
+        - button "search" [ref=e37] [cursor=pointer]
+        - button "Log In" [ref=e41] [cursor=pointer]
+    - main [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e50]:
+          - generic [ref=e54] [cursor=pointer]:
+            - img "Save and Sail Semi-Annual Event." [ref=e56]
+            - generic [ref=e57]: More Time To Pay
+            - generic [ref=e58]:
+              - generic [ref=e60]:
+                - generic [ref=e61]: Final Payment Is Due
+                - generic [ref=e62]:
+                  - generic [ref=e63]:
+                    - text: "30"
+                    - superscript [ref=e64]: "*"
+                  - generic [ref=e65]:
+                    - generic [ref=e66]: Days Before
+                    - generic [ref=e67]: You Sail
+              - generic [ref=e68]:
+                - separator [ref=e69]
+                - generic [ref=e70]: +
+                - separator [ref=e71]
+              - generic [ref=e72]:
+                - generic [ref=e73]:
+                  - text: Up to
+                  - superscript [ref=e74]: $
+                  - text: 50 onboard credit
+                - generic [ref=e75]:
+                  - text: Room upgrade from
+                  - superscript [ref=e76]: $
+                  - text: "1"
+                - generic [ref=e77]: 50% off deposits
+            - link "shop this deal. More time to pay, final payment is due 30 days before you sail and up to $50 onboard credit, room upgrade from $1, and 50% off deposits." [ref=e79]: Shop This deal
+          - paragraph [ref=e81]: "*All taxes and fees are included."
+          - generic [ref=e83]:
+            - alert [ref=e84]
+            - generic [ref=e87]:
+              - text:   
+              - generic [ref=e89]:
+                - list [ref=e90]:
+                  - listitem [ref=e91]:
+                    - button "Sail To" [ref=e92] [cursor=pointer]
+                  - listitem [ref=e96]:
+                    - button "Sail From" [ref=e97] [cursor=pointer]
+                  - listitem [ref=e101]:
+                    - button "Dates" [ref=e102] [cursor=pointer]
+                  - listitem [ref=e106]:
+                    - button "Duration" [ref=e107] [cursor=pointer]
+                  - listitem [ref=e111]:
+                    - button [ref=e112] [cursor=pointer]
+                - text:      
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e116]: Cruise sale ends on July 14, 2026, EST
+            - generic [ref=e117]:
+              - generic [ref=e118]: Sale Ends In
+              - generic [ref=e119]:
+                - generic [ref=e120]:
+                  - generic [ref=e121]: "02"
+                  - paragraph [ref=e122]: D
+                - generic [ref=e123]: ":"
+                - generic [ref=e124]:
+                  - generic [ref=e125]: "15"
+                  - paragraph [ref=e126]: H
+                - generic [ref=e127]: ":"
+                - generic [ref=e128]:
+                  - generic [ref=e129]: "20"
+                  - paragraph [ref=e130]: M
+                - generic [ref=e131]: ":"
+                - generic [ref=e132]:
+                  - generic [ref=e133]: "54"
+                  - paragraph [ref=e134]: S
+          - generic [ref=e136]:
+            - text: Big Crew, Big Savings!
+            - generic [ref=e138]:
+              - generic [ref=e140]:
+                - generic [ref=e141]:
+                  - text: "3"
+                  - superscript [ref=e142]: rd
+                  - text: "& 4"
+                  - superscript [ref=e143]: th
+                  - text: Guests
+                - generic [ref=e144]:
+                  - text: Sail Free
+                  - superscript [ref=e145]: "**"
+              - generic [ref=e146]: +
+              - generic [ref=e147]:
+                - generic [ref=e148]: up to
+                - generic [ref=e149]:
+                  - superscript [ref=e150]: $
+                  - generic [ref=e151]: "200"
+                - generic [ref=e152]: onboard credit
+            - link "book now. big crew big savings. 3rd and 4th guests sail free and up to $200 onboard credit" [ref=e153] [cursor=pointer]: book now
+        - paragraph [ref=e155]: "**Terms and conditions apply. Free offer applies to cruise fare only, offered on select sailings, categories and occupancies."
+        - generic [ref=e158]:
+          - text: Book Your Getaway With This Deal
+          - generic [ref=e159]:
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - generic [ref=e163]: save up to
+                - generic [ref=e164]:
+                  - superscript [ref=e165]: $
+                  - generic [ref=e166]: 1,090
+                  - superscript [ref=e167]: "*"
+                - generic [ref=e168]: per room
+              - generic [ref=e169]: +
+              - generic [ref=e170]:
+                - generic [ref=e171]: deposits from
+                - generic [ref=e172]:
+                  - superscript [ref=e173]: $
+                  - generic [ref=e174]: "50"
+                - generic [ref=e175]: per person
+            - generic [ref=e176]:
+              - text: "- Plus Room Upgrade From"
+              - superscript [ref=e177]: $
+              - text: 1 -
+          - link "Shop this deal. Limited-time savings are on now. Cruises from $59 per person, per day." [ref=e178] [cursor=pointer]: Shop This Deal
+      - generic [ref=e181] [cursor=pointer]:
+        - generic [ref=e182]:
+          - generic [ref=e183]:
+            - text: Sailing to Paradise Collection
+            - superscript [ref=e184]: ™
+            - text: destinations
+          - generic [ref=e185]: Summer 2029
+        - link "Learn More. Carnival Destiny. More Sea to See.Sailing to Paradise Collection Destinations Summer 2029." [ref=e186]:
+          - /url: /cruise-ships/carnival-destiny?icid=crm_ccl_newdestiny_071026_hm_ctile_ct1_audience_2
+          - text: Learn More
+      - generic [ref=e188] [cursor=pointer]:
+        - generic [ref=e190]:
+          - generic [ref=e191]: Our Top Destinations
+          - generic [ref=e192]: Are On Sale
+        - generic [ref=e193]:
+          - generic [ref=e195]:
+            - generic [ref=e196]: The Bahamas Sailings
+            - generic [ref=e199]:
+              - generic [ref=e200]: STARTING FROM
+              - generic [ref=e201]:
+                - superscript [ref=e202]: $
+                - text: "171"
+                - superscript [ref=e203]: "*"
+              - generic [ref=e204]: PER PERSON
+            - link "book now, the bahamas sailings from $171 per person" [ref=e205]:
+              - /url: /cruise-search?icid=crm_ccl_destination-bahamas_070125_hm_pack_p1_public_3&dest=bh
+              - text: BOOK NOW
+          - generic [ref=e207]:
+            - generic [ref=e208]: Caribbean Sailings
+            - generic [ref=e211]:
+              - generic [ref=e212]: STARTING FROM
+              - generic [ref=e213]:
+                - superscript [ref=e214]: $
+                - text: "257"
+                - superscript [ref=e215]: "*"
+              - generic [ref=e216]: PER PERSON
+            - link "book now, The Caribbean sailings from $257 per person" [ref=e217]:
+              - /url: /cruise-search?icid=crm_ccl_destination-caribbean_070125_hm_pack_p2_public_3&dest=c
+              - text: BOOK NOW
+          - generic [ref=e219]:
+            - generic [ref=e220]: Mexico Sailings
+            - generic [ref=e223]:
+              - generic [ref=e224]: STARTING FROM
+              - generic [ref=e225]:
+                - superscript [ref=e226]: $
+                - text: "198"
+                - superscript [ref=e227]: "*"
+              - generic [ref=e228]: PER PERSON
+            - link "book now, Mexico sailings from $198 per person" [ref=e229]:
+              - /url: /cruise-search?icid=crm_ccl_destination-mexico_070125_hm_pack_p3_public_3&dest=m
+              - text: BOOK NOW
+          - generic [ref=e231]:
+            - generic [ref=e232]:
+              - generic [ref=e233]: spotlight
+              - generic [ref=e234]: Celebration Key
+            - generic [ref=e235]:
+              - generic [ref=e236]: STARTING FROM
+              - generic [ref=e237]:
+                - superscript [ref=e238]: $
+                - text: "171"
+                - superscript [ref=e239]: "*"
+              - generic [ref=e240]: PER PERSON
+            - link "book now, Spotlight. Celebration Key. sailings from $171 per person" [ref=e241]:
+              - /url: /cruise-search?icid=crm_ccl_destination-celebrationkey_072925_hm_pack_p4_public_2&ptport=CBK
+              - text: BOOK NOW
+      - generic "flexpay banner container" [ref=e243]:
+        - generic [ref=e244]:
+          - generic [ref=e245]: Book Today. Pay Over Time.
+          - generic [ref=e247]:
+            - img "Financing powered by Flex Pay" [ref=e248]
+            - generic [ref=e250]:
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - generic [ref=e253]: upto
+                  - generic [ref=e254]:
+                    - superscript [ref=e255]: $
+                    - text: "100"
+                  - generic [ref=e256]: statementcredit
+                - generic [ref=e257]: Available On Select 2026 Sailings
+              - generic [ref=e258]:
+                - generic [ref=e259]: +
+                - generic [ref=e260]:
+                  - generic [ref=e261]: "0"
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: "%"
+                    - generic [ref=e264]: APR
+                - generic [ref=e265]: +
+                - generic [ref=e266]:
+                  - generic [ref=e267]: from
+                  - generic [ref=e268]:
+                    - superscript [ref=e269]: $
+                    - text: "0"
+                  - generic [ref=e270]: down
+          - generic [ref=e271]:
+            - link "Pre-qualify now for financing powered by Flex Pay." [ref=e272] [cursor=pointer]:
+              - /url: /cruise-search?pageNumber=1&numadults=2&shipcode=BR,CQ,EL,HZ,LI,MC,MI,PO,PA,RD,SP,SN,VA&dates=072026,082026,092026,102026,112026,122026&cruisedeals=flexpay_offer
+              - text: Shop This Deal
+            - button "Terms and conditions apply for Flex Pay financing." [ref=e273] [cursor=pointer]:
+              - generic [ref=e274]: Terms and conditions apply
+      - generic [ref=e276] [cursor=pointer]:
+        - generic [ref=e277]:
+          - generic [ref=e278]: Book Our Biggest,
+          - generic [ref=e279]: Newest Ships
+        - generic [ref=e280]:
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - generic [ref=e284]: Carnival
+              - generic [ref=e285]:
+                - text: Celebration
+                - superscript [ref=e286]: ®
+              - generic [ref=e287]: Miami
+            - link "search cruises. carnival celebrations, Port Miami" [ref=e290]:
+              - /url: /cruise-search?icid=crm_ccl_ships-celebration_103025_resp_pack_p1_nonbooked_2&shipcode=cb&ratecodes=
+              - text: SEARCH CRUISES
+          - generic [ref=e292]:
+            - generic [ref=e293]:
+              - generic [ref=e295]:
+                - text: Mardi Gras
+                - superscript [ref=e296]: ®
+              - generic [ref=e297]: Port Canaveral
+            - link "search cruises. carnival mardi gras, port canaveral" [ref=e300]:
+              - /url: /cruise-search?icid=crm_ccl_ships-mardigras_103025_resp_pack_p2_nonbooked_2&shipcode=md&ratecodes=
+              - text: SEARCH CRUISES
+          - generic [ref=e302]:
+            - generic [ref=e303]:
+              - generic [ref=e304]: Carnival
+              - generic [ref=e305]:
+                - text: Jubilee
+                - superscript [ref=e306]: ®
+              - generic [ref=e307]: Galveston
+            - link "search cruises. carnival jubilee, port galveston" [ref=e310]:
+              - /url: /cruise-search?icid=crm_ccl_ships-jubilee_103025_resp_pack_p3_nonbooked_2&shipcode=jb&ratecodes=
+              - text: SEARCH CRUISES
+          - generic [ref=e312]:
+            - generic [ref=e313]:
+              - generic [ref=e314]: Carnival
+              - generic [ref=e315]:
+                - text: Festivale
+                - superscript [ref=e316]: ™
+              - generic [ref=e317]: Port Canaveral
+            - link "search cruises. carnival festivale, port canaveral" [ref=e320]:
+              - /url: /cruise-search?icid=crm_ccl_ships-festivale_103025_resp_pack_p4_nonbooked_2&shipcode=FT&ratecodes=
+              - text: SEARCH CRUISES
+      - generic [ref=e322]:
+        - generic [ref=e323]: Find Fun For Everyone On Board
+        - generic [ref=e326]:
+          - link "Fun Starts Here" [ref=e327] [cursor=pointer]:
+            - /url: /onboard/cruise-activities?icid=crm_ccl_activity_020526_resp_grid_g1_public_5
+          - link "Relax & Recharge" [ref=e330] [cursor=pointer]:
+            - /url: /onboard/spa-fitness?icid=crm_ccl_activity_020526_resp_grid_g2_public_5
+          - link [ref=e333] [cursor=pointer]:
+            - /url: /family-kids-cruises?icid=crm_ccl_activity_020526_resp_grid_g3_public_5
+          - link "Endless Entertainment" [ref=e337] [cursor=pointer]:
+            - /url: /onboard/cruise-entertainment?icid=crm_ccl_activity_020526_resp_grid_g4_public_5
+          - link "Cheers To You" [ref=e340] [cursor=pointer]:
+            - /url: /onboard/bars?icid=crm_ccl_activity_020526_resp_grid_g5_public_5
+      - list [ref=e344]:
+        - listitem [ref=e345]:
+          - link "$300 ONBOARD CREDIT + INTEREST-FREE FINANCING. Apply Now. Opens in a new window." [ref=e346] [cursor=pointer]:
+            - /url: https://cards.barclaycardus.com/banking/credit-card/carnival/mastercard-world/co-brand-partner-site/6dc3c013-0a80-4bc1-bf11-fbe1dc16b780?referrerid=PTRBACLPA
+            - paragraph [ref=e350]: $300 Onboard Credit + Interest-Free Financing
+            - generic [ref=e352]:
+              - text: Earn 30,000 FunPoints
+              - superscript [ref=e353]: ®
+              - text: ", redeemable for $300 onboard credit. Plus,enjoy a 6-month 0% promo APR on Carnival Cruise bookings, All with the Carnival"
+              - superscript [ref=e354]: ®
+              - text: World Mastercard
+              - superscript [ref=e355]: ®
+            - text: APPLY NOW
+          - generic [ref=e357]:
+            - text: Earn 30,000 FunPoints
+            - superscript [ref=e358]: ®
+            - text: ", redeemable for $300 onboard credit. Plus,enjoy a 6-month 0% promo APR on Carnival Cruise bookings, All with the Carnival"
+            - superscript [ref=e359]: ®
+            - text: World Mastercard
+            - superscript [ref=e360]: ®
+        - listitem [ref=e361]:
+          - link "2-5 Day Cruises. Shop Now. Opens in new window." [ref=e362] [cursor=pointer]:
+            - /url: /cruise-search?icid=crm_ccl_short_091124_hm_tout_t2_nonbooked_7&dur=D1
+            - paragraph [ref=e366]: 2-5 Day Cruises
+            - generic [ref=e367]: Get big savings! Check out 2-5 day cruise deals and begin to plan your next adventure.
+            - text: SHOP NOW
+          - generic [ref=e368]: Get big savings! Check out 2-5 day cruise deals and begin to plan your next adventure.
+        - listitem [ref=e369]:
+          - link [ref=e370] [cursor=pointer]:
+            - /url: /cruise-search?ptport=RTB,HMD,CBK&icid=icp_ccl_paradisecollection_051526_hm_t3
+            - paragraph [ref=e374]: Paradise Collection by Carnival
+            - generic [ref=e375]: From breathtaking, white sand beaches to vibrant cultures and unforgettable excursions, each destination offers a different slice of paradise.
+            - text: SHOP NOW
+          - generic [ref=e376]: From breathtaking, white sand beaches to vibrant cultures and unforgettable excursions, each destination offers a different slice of paradise.
+        - listitem [ref=e377]:
+          - link "Explore Australia Cruises. Learn More. opens in new window." [ref=e378] [cursor=pointer]:
+            - /url: /cruise-search?icid=crm_ccl_australia_091124_hm_tout_t4_nonbooked_7&dest=nz,o,u
+            - paragraph [ref=e382]: Explore Australia Cruises
+            - generic [ref=e383]: Sail from Sydney or Brisbane for Aussie adventures or to exotic South Pacific Islands.
+            - text: LEARN MORE
+          - generic [ref=e384]: Sail from Sydney or Brisbane for Aussie adventures or to exotic South Pacific Islands.
+    - contentinfo [ref=e392]:
+      - generic [ref=e393]:
+        - generic [ref=e394]:
+          - generic [ref=e395]: Call Us
+          - generic [ref=e396]: 1-800-764-7419
+        - combobox "Country Selector" [ref=e403]:
+          - option "United States" [selected]
+          - option "Australia"
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - heading "Plan A Cruise" [level=2] [ref=e410]
+          - list [ref=e411]:
+            - listitem [ref=e412]:
+              - link "Today's Deals" [ref=e414] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-deals?icid=icp_ccl_deals_082319_hm_footer
+            - listitem [ref=e415]:
+              - link "Search Cruises" [ref=e417] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-search
+            - listitem [ref=e418]:
+              - link "Family Cruises" [ref=e420] [cursor=pointer]:
+                - /url: https://www.carnival.com/family-kids-cruises?icid=icp_ccl_family_060624_footer
+            - listitem [ref=e421]:
+              - link "Funtastic Holiday Cruises" [ref=e423] [cursor=pointer]:
+                - /url: https://www.carnival.com/funtastic-holiday-cruises?icid=icp_holidays_ccl_07252019_footer
+            - listitem [ref=e424]:
+              - link "Carnival Journeys" [ref=e426] [cursor=pointer]:
+                - /url: https://www.carnival.com/journeys?icid=CC_journeys-footer_3289
+            - listitem [ref=e427]:
+              - link "Weddings & Occasions" [ref=e429] [cursor=pointer]:
+                - /url: https://www.carnival.com/wedding-cruises?icid=CC_weddings-footer_1027
+            - listitem [ref=e430]:
+              - link [ref=e432] [cursor=pointer]:
+                - /url: https://www.carnivalmeetings.com/
+                - text: Charters, Meetings & Incentives
+                - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e434]
+            - listitem [ref=e436]:
+              - link [ref=e438] [cursor=pointer]:
+                - /url: https://carnivalcruisecharters.com/
+                - text: Themed Cruises
+                - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e440]
+            - listitem [ref=e442]:
+              - link "Personal Vacation Planners" [ref=e444] [cursor=pointer]:
+                - /url: https://www.carnival.com/personal-vacation-planners?icid=icp_pvp_ccl_08112022_footer
+            - listitem [ref=e445]:
+              - link "Travel Agent Finder" [ref=e447] [cursor=pointer]:
+                - /url: https://www.carnival.com/find-a-travel-agent?icid=CC_travel_agent_footer_10182018
+            - listitem [ref=e448]:
+              - link [ref=e450] [cursor=pointer]:
+                - /url: https://www.buyatab.com/custom/carnival/
+                - text: Gift Cards
+                - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e452]
+            - listitem [ref=e454]:
+              - link "Carnival Mastercard" [ref=e456] [cursor=pointer]:
+                - /url: https://cards.barclaycardus.com/banking/credit-card/carnival/mastercard-world/co-brand-partner-site/6dc3c013-0a80-4bc1-bf11-fbe1dc16b780?referrerid=PTRBACLPF
+            - listitem [ref=e457]:
+              - link "Financing Powered By Flex Pay" [ref=e459] [cursor=pointer]:
+                - /url: https://www.carnival.com/financing?icid=icp_flexpay_ccl_101024_footer
+            - listitem [ref=e460]:
+              - link "Auto Pay" [ref=e462] [cursor=pointer]:
+                - /url: https://www.carnival.com/auto-pay?icid=icp_autopay_ccl_101024_footer
+            - listitem [ref=e463]:
+              - link "Carnival Vacation Protection" [ref=e465] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/vacation-protection
+            - listitem [ref=e466]:
+              - link "VIFP Club" [ref=e468] [cursor=pointer]:
+                - /url: https://www.carnival.com/vifp/overview?icid=ccl_vifp_footer_0414
+            - listitem [ref=e469]:
+              - link "Away We Go Blog" [ref=e471] [cursor=pointer]:
+                - /url: https://www.carnival.com/awaywego
+        - generic [ref=e472]:
+          - heading "Cruise Destinations" [level=2] [ref=e473]
+          - list [ref=e474]:
+            - listitem [ref=e475]:
+              - link "Caribbean Cruises" [ref=e477] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/caribbean-cruises?icid=icp_ccl_caribbean_08112022_footer
+            - listitem [ref=e478]:
+              - link "Bahamas Cruises" [ref=e480] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/bahamas-cruises?icid=icp_ccl_bahamas_08112022_footer
+            - listitem [ref=e481]:
+              - link "Mexico Cruises" [ref=e483] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/mexico-cruises?icid=icp_ccl_mexico_08112022_footer
+            - listitem [ref=e484]:
+              - link "Alaska Cruises" [ref=e486] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/alaska-cruises?icid=icp_ccl_alaska_08112022_footer
+            - listitem [ref=e487]:
+              - link "Hawaii Cruises" [ref=e489] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/hawaii-cruises?icid=icp_ccl_hawaii_08112022_footer
+            - listitem [ref=e490]:
+              - link "Europe Cruises" [ref=e492] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/europe-cruises?icid=icp_ccl_europe_08112022_footer
+            - listitem [ref=e493]:
+              - link "Bermuda Cruises" [ref=e495] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/bermuda-cruises?icid=icp_ccl_bermuda_08112022_footer
+            - listitem [ref=e496]:
+              - link "Panama Canal Cruises" [ref=e498] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/panama-canal-cruises?icid=icp_ccl_panama_08112022_footer
+            - listitem [ref=e499]:
+              - link "Canada & New England Cruises" [ref=e501] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/canada-new-england-cruises?icid=icp_ccl_canada_08112022_footer
+            - listitem [ref=e502]:
+              - link "Greenland & Canada Cruises" [ref=e504] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/greenland-canada-cruises
+            - listitem [ref=e505]:
+              - link "South America Cruises" [ref=e507] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/south-america-cruises?icid=icp_ccl_south-america_08272025_footer
+            - listitem [ref=e508]:
+              - link "Transatlantic Cruises" [ref=e510] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/transatlantic-cruises?icid=icp_ccl_transatlantic_08112022_footer
+            - listitem [ref=e511]:
+              - link "Transpacific Cruises" [ref=e513] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/transpacific-cruises?icid=icp_ccl_transpacific_08112022_footer
+            - listitem [ref=e514]:
+              - link "Australia Cruises" [ref=e516] [cursor=pointer]:
+                - /url: https://www.carnival.com/cruise-to/australia-cruises?icid=icp_ccl_australia_08112022_footer
+        - generic [ref=e517]:
+          - heading "Already Booked" [level=2] [ref=e518]
+          - list [ref=e519]:
+            - listitem [ref=e520]:
+              - link "Manage My Cruises" [ref=e522] [cursor=pointer]:
+                - /url: https://www.carnival.com/booked/redirect?goal=mybooking&icid=icp_ccl_manage_0802_footer
+            - listitem [ref=e523]:
+              - link "Shore Excursions" [ref=e525] [cursor=pointer]:
+                - /url: https://www.carnival.com/shore-excursions?icid=icp_ccl_shoreex_0708_footer
+            - listitem [ref=e526]:
+              - link "Shore Excursions Best Price Guarantee" [ref=e528] [cursor=pointer]:
+                - /url: https://www.carnival.com/content/shore-excursion-best-price-guarantee?icid=icp_ccl_shoreexbpg_022224_footer
+            - listitem [ref=e529]:
+              - link "Group Shore Excursions" [ref=e531] [cursor=pointer]:
+                - /url: https://www.carnival.com/group-shore-excursions?icid=CC_Footer_845
+            - listitem [ref=e532]:
+              - link "Beverage Packages" [ref=e534] [cursor=pointer]:
+                - /url: https://www.carnival.com/drink-packages?icid=icp_ccl_beverage_0708_footer
+            - listitem [ref=e535]:
+              - link "Internet Plans" [ref=e537] [cursor=pointer]:
+                - /url: https://www.carnival.com/internet-plans?icid=icp_ccl_internet_0708_footer
+            - listitem [ref=e538]:
+              - link "In-Room Gifts & Shopping" [ref=e540] [cursor=pointer]:
+                - /url: https://www.carnival.com/shop?icid=icp_ccl_shopping_0708_footer
+            - listitem [ref=e541]:
+              - link "Spa & Salon Services" [ref=e543] [cursor=pointer]:
+                - /url: https://www.carnival.com/spa?icid=icp_ccl_spa_0708_footer
+            - listitem [ref=e544]:
+              - link "Fly2Fun" [ref=e546] [cursor=pointer]:
+                - /url: https://www.carnival.com/fly2fun?icid=icp_ccl_fly2fun_11_20_19_footer
+            - listitem [ref=e547]:
+              - link "Airport Transportation" [ref=e549] [cursor=pointer]:
+                - /url: https://www.carnival.com/airport-transfers?icid=icp_ccl_transports_0802_footer
+            - listitem [ref=e550]:
+              - link "Carnival HUB App" [ref=e552] [cursor=pointer]:
+                - /url: https://www.carnival.com/shipboard/funhub/funhub-landing?icid=icp_ccl_hubapp_0802_footer
+        - generic [ref=e553]:
+          - heading "Customer Service" [level=2] [ref=e554]
+          - list [ref=e555]:
+            - listitem [ref=e556]:
+              - link "FAQs" [ref=e558] [cursor=pointer]:
+                - /url: https://www.carnival.com/help
+            - listitem [ref=e559]:
+              - link "Contact Us" [ref=e561] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/contact-us
+            - listitem [ref=e562]:
+              - link "Post-Cruise Inquiries" [ref=e564] [cursor=pointer]:
+                - /url: https://www.carnival.com/post-cruise-inquiries?icid=cc_footer_post-cruise_122017
+            - listitem [ref=e565]:
+              - link "Guests with Disabilities" [ref=e567] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/special-needs
+            - listitem [ref=e568]:
+              - link "Lowest Price Guarantee" [ref=e570] [cursor=pointer]:
+                - /url: https://www.carnival.com/content/lowest-price-guarantee?icid=cc_footer_lpg_02212018
+            - listitem [ref=e571]:
+              - link "Early Saver Price Protection Form" [ref=e573] [cursor=pointer]:
+                - /url: https://www.carnival.com/request-forms/price-protection
+            - listitem [ref=e574]:
+              - link "Legal Notices for EU & UK Guests" [ref=e576] [cursor=pointer]:
+                - /url: https://www.carnival.com/Legal/legal-notices-eu-uk-guests?icid=icp_ccl_eulegalnotice_121720_footer
+            - listitem [ref=e577]:
+              - link "Consumer Health Data Privacy Notice" [ref=e579] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/legal-notice/consumer-health-data-privacy-notice
+            - listitem [ref=e580]:
+              - button "Your Privacy Choices - Open cookie preferences" [ref=e582] [cursor=pointer]: Your Privacy Choices
+        - generic [ref=e583]:
+          - heading "About Carnival" [level=2] [ref=e584]
+          - list [ref=e585]:
+            - listitem [ref=e586]:
+              - link "About Us" [ref=e588] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/about-us
+            - listitem [ref=e589]:
+              - link "Cruise Ticket Contract Terms" [ref=e591] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/legal-notice/ticket-contract?icid=CC_Footer_84
+            - listitem [ref=e592]:
+              - link "Passenger Bill of Rights" [ref=e594] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/legal-notice/passenger-bill-of-rights?icid=CC_passenger-rights-footer_1854
+            - listitem [ref=e595]:
+              - link "Safety and Security" [ref=e597] [cursor=pointer]:
+                - /url: https://www.carnival.com/legal/safety-security?icid=CC_Footer_109
+            - listitem [ref=e598]:
+              - link [ref=e600] [cursor=pointer]:
+                - /url: https://www.carnivalcorp.com/wp-content/uploads/2024/10/Modern-Slavery-Statement-April-2024v1.pdf
+                - text: Slavery Statement
+                - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e602]
+            - listitem [ref=e604]:
+              - link "Carnival's Values" [ref=e606] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/carnivals-values
+            - listitem [ref=e607]:
+              - link [ref=e609] [cursor=pointer]:
+                - /url: https://www.carnivalcorp.com/governance/business-conduct-ethics?icid=icp_ccl_ethics_012325_footer
+                - text: Business Ethics
+                - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e611]
+            - listitem [ref=e613]:
+              - link "In the Community" [ref=e615] [cursor=pointer]:
+                - /url: https://www.carnival.com/about-carnival/in-the-community
+      - list [ref=e619]:
+        - listitem [ref=e620]:
+          - link "Legal Notices" [ref=e622] [cursor=pointer]:
+            - /url: https://www.carnival.com/about-carnival/legal-notice?icid=CC_Footer_83
+        - listitem [ref=e623]:
+          - link "Privacy & Cookies" [ref=e625] [cursor=pointer]:
+            - /url: https://www.carnival.com/about-carnival/legal-notice/privacy-notice?icid=CC_Footer_82
+        - listitem [ref=e626]:
+          - link [ref=e628] [cursor=pointer]:
+            - /url: https://jobs.carnival.com/
+            - text: Careers
+            - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e630]
+        - listitem [ref=e632]:
+          - link [ref=e634] [cursor=pointer]:
+            - /url: https://www.goccl.com/?icid=CC_travel-partners_1758
+            - text: Travel Partners
+            - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e636]
+        - listitem [ref=e638]:
+          - link [ref=e640] [cursor=pointer]:
+            - /url: https://carnival-news.com/
+            - text: Newsroom
+            - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e642]
+        - listitem [ref=e644]:
+          - link "Site Map" [ref=e646] [cursor=pointer]:
+            - /url: https://www.carnival.com/sitemap?icid=CC_sitemap-footer_1856
+      - list [ref=e649]:
+        - listitem [ref=e650]:
+          - link [ref=e651] [cursor=pointer]:
+            - /url: https://www.facebook.com/Carnival?ref=ts
+            - img "Facebook Indicates external site which may or may not meet accessibility guidelines." [ref=e652]
+        - listitem [ref=e653]:
+          - link [ref=e654] [cursor=pointer]:
+            - /url: https://twitter.com/carnivalcruise
+            - img "Twitter Indicates external site which may or may not meet accessibility guidelines." [ref=e655]
+        - listitem [ref=e656]:
+          - link [ref=e657] [cursor=pointer]:
+            - /url: https://www.instagram.com/carnival
+            - img "Instagram Indicates external site which may or may not meet accessibility guidelines." [ref=e658]
+        - listitem [ref=e659]:
+          - link [ref=e660] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@carnival?
+            - img "TikTok Indicates external site which may or may not meet accessibility guidelines." [ref=e661]
+        - listitem [ref=e662]:
+          - link [ref=e663] [cursor=pointer]:
+            - /url: https://www.pinterest.com/carnivalcruise/
+            - img "Pinterest Indicates external site which may or may not meet accessibility guidelines." [ref=e664]
+        - listitem [ref=e665]:
+          - link [ref=e666] [cursor=pointer]:
+            - /url: https://www.youtube.com/carnival
+            - img "Youtube Indicates external site which may or may not meet accessibility guidelines." [ref=e667]
+        - listitem [ref=e668]:
+          - link [ref=e669] [cursor=pointer]:
+            - /url: https://www.threads.net/@carnival
+            - img "Threads Indicates external site which may or may not meet accessibility guidelines." [ref=e670]
+      - generic [ref=e671]:
+        - generic [ref=e673]:
+          - link "Carnival Home Page" [ref=e674] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e677]:
+            - generic [ref=e678]: © 2026 Carnival Corporation Ltd.
+            - generic [ref=e679]: All rights reserved.
+        - generic [ref=e680]:
+          - generic [ref=e681]:
+            - img "Indicates external site which may or may not meet accessibility guidelines." [ref=e683]
+            - paragraph [ref=e685]: Indicates external site which may or may not meet accessibility guidelines.
+          - generic [ref=e686]:
+            - paragraph [ref=e687]: "*Taxes and fees are included."
+            - link "View terms and conditions" [ref=e688] [cursor=pointer]:
+              - /url: /legal/specials-terms-conditions
+  - alert [ref=e690]
