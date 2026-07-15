@@ -1,0 +1,65 @@
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+tmp/
+
+# Phase 6 — Cucumber generated per-tenant artifacts. Kept out of git so
+# operator-triggered generations don't clutter the repo. Reviewable through
+# the dashboard instead.
+features/*/
+!features/support/
+tests/generated/
+tests/pages/generated/
+
+# Python / Django (dev)
+__pycache__/
+*.pyc
+.venv/
+venv/
+ai-healer-django/logs/
+ai-healer-django/flaky_healer/logs/
+
+# Local env overrides
+.env.local
+
+# macOS / IDE noise
+.DS_Store
+.idea/
+.vscode/
+
+# ────────────────────────────────────────────────────────────────────
+# Phase 10 — Render deployment
+# ────────────────────────────────────────────────────────────────────
+
+# Env / secrets: NEVER committed. OPENAI_API_KEY, FERNET_KEY, DB creds
+# live in Render's dashboard as env vars.
+.env
+*.env
+ai-healer-django/.env
+ai-healer-django/flaky_healer/.env
+
+# Desktop app has its own repo: xebia-arvind/xt-forge-agent-desktop
+desktop-app/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+*.whl
+
+# Legacy Streamlit UI — not deployed to Render
+streamlet-ui/
+
+# Nested venvs (dev-machine only)
+ai-healer-django/venv/
+ai-healer-django/flaky_healer/venv/
+
+# Runner logs + ephemeral output dirs
+runner_logs/
+ai-healer-django/flaky_healer/runner_logs/
+ai-healer-django/flaky_healer/static/
+ai-healer-django/flaky_healer/uploads/
+
+# Zip archive from an older packaging attempt
+pages.zip

@@ -1,0 +1,56 @@
+# Keep the Docker build context small — anything here is EXCLUDED from
+# `COPY . /app/` in the Dockerfile. Roughly mirrors .gitignore + a few
+# heavy dirs we still want committed but not shipped to the image.
+
+# Env / secrets
+.env
+*.env
+ai-healer-django/.env
+ai-healer-django/flaky_healer/.env
+
+# Desktop app (separate repo)
+desktop-app/
+
+# Legacy UI
+streamlet-ui/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+*.whl
+pages.zip
+
+# Node deps (installed inside the image via `npm ci`)
+node_modules/
+ai-healer-django/flaky_healer/test_generation/ts_normalizer/node_modules/
+
+# Playwright / test artifacts
+playwright-report/
+test-results/
+tests/generated/
+tests/pages/generated/
+features/blu-b2c/
+features/*/
+!features/support/
+
+# Python bytecode + venvs
+__pycache__/
+*.pyc
+.venv/
+venv/
+ai-healer-django/venv/
+ai-healer-django/flaky_healer/venv/
+ai-healer-django/flaky_healer/logs/
+ai-healer-django/flaky_healer/static/
+ai-healer-django/flaky_healer/uploads/
+ai-healer-django/flaky_healer/runner_logs/
+
+# Docs / IDE / macOS
+docs/
+.git/
+.github/
+.idea/
+.vscode/
+.DS_Store
+tmp/
