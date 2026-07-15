@@ -18,13 +18,18 @@ tablib==3.9.0
 text-unidecode==1.3
 typing_extensions==4.15.0
 
-# DOM Extraction and Matching Engine dependencies
+# DOM Extraction and Matching Engine dependencies.
+# Phase 10 — sentence-transformers + faiss-cpu removed (pulled in torch,
+# ~700 MB, OOM'd Render's 512 MB free tier). matching_engine.py has a
+# try/except fallback (see lines 10-20) that switches to scikit-learn's
+# TF-IDF when either import fails — semantic ranking is slightly less
+# accurate but pipeline works. Add them back for local dev with
+# `pip install sentence-transformers==3.3.1 faiss-cpu==1.9.0.post1` if
+# you want the SBERT path.
 beautifulsoup4==4.13.4
 numpy==2.2.2
 pandas==2.2.3
 scikit-learn==1.6.1
-sentence-transformers==3.3.1
-faiss-cpu==1.9.0.post1
 
 # Phase 3 — dashboard absorbs Streamlit
 # django-q2: background task runner for npm gen:testcases / playwright test
