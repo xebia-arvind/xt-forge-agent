@@ -1,4 +1,4 @@
-# Playwright Carnival Framework — Deep Documentation
+# XT-Forge — Deep Documentation
 
 This folder contains a deep, code-derived walkthrough of the entire system. Read [../CLAUDE.md](../CLAUDE.md) first for the 30-second orientation; come here for the details.
 
@@ -8,6 +8,7 @@ This folder contains a deep, code-derived walkthrough of the entire system. Read
 | [DATA_FLOW.md](DATA_FLOW.md) | Sequence diagrams + step-by-step traces for the four primary flows: self-healing click, test generation, UI knowledge sync, Jira push. |
 | [API_REFERENCE.md](API_REFERENCE.md) | Every Django endpoint with request/response shapes, plus the data model cheat-sheet. |
 | [WORKFLOWS.md](WORKFLOWS.md) | How to bring the stack up, run/heal/generate/push, debug each component. |
+| [WINDOWS_SERVER_SETUP.md](WINDOWS_SERVER_SETUP.md) | Step-by-step Windows Server install (PostgreSQL + Memurai + Node + Python venv + Waitress). |
 | [UPGRADE_PLAN.md](UPGRADE_PLAN.md) | Draft plan: multi-tenancy, `curertestai` cleanup, dashboard absorbs Streamlit. |
 
 ## At a glance

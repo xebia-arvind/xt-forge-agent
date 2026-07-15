@@ -53,3 +53,11 @@ gunicorn>=22.0
 psycopg2-binary>=2.9
 dj-database-url>=2.2
 whitenoise>=6.6
+
+# Phase 15 — Windows Server support. gunicorn is Unix-only (uses os.fork +
+# fcntl); waitress is the pure-Python WSGI server the Windows install
+# guide (docs/WINDOWS_SERVER_SETUP.md) uses instead. Both are installed
+# unconditionally so the same requirements.txt serves Render Linux
+# (gunicorn) and Windows Server (waitress) without a per-environment
+# fork. On disk it's ~500 KB — negligible.
+waitress>=3.0
