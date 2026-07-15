@@ -94,7 +94,12 @@ services:
     dockerfilePath: ./ai-healer-django/Dockerfile
     dockerContext: .
     autoDeploy: true
-    dockerCommand: sh -c "cd /app/ai-healer-django/flaky_healer && python manage.py qcluster"
+    # Render passes dockerCommand as a single string to Docker's shell exec
+    # (`/bin/sh -c "<value>"`). Nesting a second `sh -c "..."` inside caused
+    # the whole `cd … && python …` to be treated as a filename. Instead,
+    # rely on the image's WORKDIR (set at Dockerfile line 49) being
+    # /app/ai-healer-django/flaky_healer — no `cd` needed.
+    dockerCommand: python manage.py qcluster
     envVars:
       - key: DJANGO_SECRET_KEY
         fromService:
