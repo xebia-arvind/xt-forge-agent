@@ -313,6 +313,35 @@ FERNET_KEY = _FERNET_KEY
 
 # django-q2 broker configuration.
 # Redis is preferred; the ORM broker is a zero-dep fallback for local hacking.
+#
+# Two ways to configure Redis:
+#   * REDIS_URL (single connection string) — how Render's managed Redis
+#     exposes credentials. Preferred in prod.
+#   * Discrete REDIS_HOST / REDIS_PORT / REDIS_DB / REDIS_PASSWORD env vars —
+#     easier for local dev where you already have Redis on localhost.
+def _q_redis_config() -> dict:
+    """Return the `redis` sub-dict for django-q2's Q_CLUSTER."""
+    from urllib.parse import urlparse
+    url = os.getenv("REDIS_URL", "").strip()
+    if url:
+        # rediss://:pass@host:port/db  (rediss = TLS; redis = plain)
+        parsed = urlparse(url)
+        return {
+            "host": parsed.hostname or "127.0.0.1",
+            "port": int(parsed.port or 6379),
+            "db": int((parsed.path or "/0").lstrip("/") or 0),
+            "password": parsed.password or None,
+            "ssl": parsed.scheme == "rediss",
+        }
+    return {
+        "host": os.getenv("REDIS_HOST", "127.0.0.1"),
+        "port": int(os.getenv("REDIS_PORT", "6379")),
+        "db": int(os.getenv("REDIS_DB", "0")),
+        "password": os.getenv("REDIS_PASSWORD", "") or None,
+        "ssl": os.getenv("REDIS_SSL", "false").lower() in ("true", "1", "yes"),
+    }
+
+
 Q_CLUSTER = {
     "name": "flaky_healer",
     "workers": int(os.getenv("Q_WORKERS", "2")),
@@ -324,11 +353,7 @@ Q_CLUSTER = {
     "queue_limit": 50,
     "cpu_affinity": 1,
     "label": "Django Q",
-    "redis": {
-        "host": os.getenv("REDIS_HOST", "127.0.0.1"),
-        "port": int(os.getenv("REDIS_PORT", "6379")),
-        "db": int(os.getenv("REDIS_DB", "0")),
-    },
+    "redis": _q_redis_config(),
 }
 if os.getenv("Q_ORM_BROKER", "false").lower() == "true":
     # Fallback broker for environments without Redis (development only).

@@ -1,21 +1,27 @@
 # Render Blueprint for XT-Forge.
 #
-# Creates four resources: a web service (gunicorn), a worker service
-# (django-q2 qcluster), a managed Postgres database, and a managed Redis
-# key-value store. Web and worker share the SAME Docker image — only the
-# start command differs.
+# Creates: 1 web service (gunicorn), 1 worker (django-q2 qcluster),
+# 1 Redis instance, 1 managed Postgres. Web + worker share the SAME
+# Docker image; only the start command differs.
 #
 # First-time setup:
 #   1. Push this repo to https://github.com/xebia-arvind/xt-forge-agent
 #   2. Render → New + → Blueprint → point at the repo.
-#   3. In the dashboard, fill the two sync:false secrets on BOTH services:
+#   3. In the dashboard, fill the two sync:false secrets on BOTH web + worker:
 #         OPENAI_API_KEY   — fresh key from platform.openai.com
-#         FERNET_KEY       — python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#         FERNET_KEY       — `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
 #   4. Wait ~10 min for the first build. Then open a Render Shell on the
 #      web service and run:
 #         cd /app/ai-healer-django/flaky_healer && python manage.py createsuperuser
 
 services:
+  # ------ Redis (25 MB free tier — django-q2 broker) ------
+  - type: redis
+    name: xt-forge-redis
+    plan: free
+    ipAllowList: []             # only reachable from services in this account
+    maxmemoryPolicy: allkeys-lru
+
   # ------ Web (Django + gunicorn) ------
   - type: web
     name: xt-forge-web
@@ -39,18 +45,13 @@ services:
         fromDatabase:
           name: xt-forge-db
           property: connectionString
-      - key: REDIS_HOST
+      - key: REDIS_URL
         fromService:
-          type: keyvalue
+          type: redis
           name: xt-forge-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: keyvalue
-          name: xt-forge-redis
-          property: port
+          property: connectionString
 
-      # --- LLM + pipeline knobs (mirror flaky_healer/.env) ---
+      # --- LLM + pipeline knobs ---
       - key: OPENAI_API_KEY
         sync: false             # set manually in dashboard — never committed
       - key: FERNET_KEY
@@ -105,16 +106,11 @@ services:
         fromDatabase:
           name: xt-forge-db
           property: connectionString
-      - key: REDIS_HOST
+      - key: REDIS_URL
         fromService:
-          type: keyvalue
+          type: redis
           name: xt-forge-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: keyvalue
-          name: xt-forge-redis
-          property: port
+          property: connectionString
 
       - key: OPENAI_API_KEY
         sync: false
@@ -145,9 +141,3 @@ databases:
     plan: free
     databaseName: xt_forge
     user: xt_forge
-
-# ------ Redis (25 MB free tier — enough for a demo) ------
-keyValueStores:
-  - name: xt-forge-redis
-    plan: free
-    ipAllowList: []             # only reachable from services in this account
