@@ -15,12 +15,25 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
 
 
+def healthz(_request):
+    """
+    Liveness probe. Returns 200 without touching the DB, cache, or any
+    external service. Render's health checker points here so the deploy
+    goes green even before migrations have run — the actual DB-backed
+    endpoints (/admin/, /test-analytics/) will 500 until then, but the
+    container is confirmed alive.
+    """
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
+    path("healthz/", healthz),
     path("admin/", admin.site.urls),
     path("auth/", include("auth.urls")),
     path("api/", include("curertestai.urls")),

@@ -29,7 +29,7 @@ services:
     plan: free
     dockerfilePath: ./ai-healer-django/Dockerfile
     dockerContext: .
-    healthCheckPath: /admin/login/
+    healthCheckPath: /healthz/
     autoDeploy: true
     envVars:
       - key: DJANGO_SECRET_KEY
