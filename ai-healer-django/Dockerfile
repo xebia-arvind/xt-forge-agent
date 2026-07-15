@@ -60,4 +60,15 @@ RUN DJANGO_SECRET_KEY=build-only \
 
 # Default command: gunicorn web server. The worker service overrides via
 # render.yaml's dockerCommand (`python manage.py qcluster`).
-CMD ["sh", "-c", "gunicorn flaky_healer.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${GUNICORN_WORKERS:-2} --timeout 120"]
+#
+# Memory tuning for Render Starter (512 MB): ONE gthread worker with 4
+# threads. Two sync workers doubled the RAM baseline and OOM'd during
+# Plan Architect runs. Threads share memory, so one process handles
+# concurrent requests without duplicating imports.
+#
+# NOT using: --preload (safe here but no measurable win when workers=1),
+# --max-requests (would recycle the process mid-SSE-stream and break the
+# Execute-panel log tail).
+# Timeout 180s accommodates LLM agent runs; graceful-timeout 30s gives
+# in-flight requests a fair chance during redeploys.
+CMD ["sh", "-c", "gunicorn flaky_healer.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${GUNICORN_WORKERS:-1} --worker-class gthread --threads ${GUNICORN_THREADS:-4} --timeout 180 --graceful-timeout 30"]
