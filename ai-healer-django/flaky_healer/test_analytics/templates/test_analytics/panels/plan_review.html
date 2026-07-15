@@ -29,8 +29,10 @@
 </div>
 
 <div class="card">
-  <h3 style="margin-top:0">Raw agent output</h3>
-  <pre id="raw-json" class="log" style="height:260px">(no output yet)</pre>
+  <details>
+    <summary style="color:var(--muted); font-size:12px; cursor:pointer;">Show raw agent output (debug)</summary>
+    <pre id="raw-json" class="log" style="height:260px; margin-top:8px;">(no output yet)</pre>
+  </details>
 </div>
 
 {% endblock %}
@@ -49,6 +51,55 @@ function setStatus(text, cls="badge-info") { $status().textContent = text; $stat
 function setMessage(msg, color="var(--muted)") { $message().innerHTML = `<span style="color:${color};">${msg}</span>`; }
 function currentJobId() { return $picker.value || sessionStorage.getItem("xt.pipeline_job_id") || ""; }
 
+// Phase 11.7 — human-readable scenario cards. Instead of dumping the raw
+// JSON, render Preconditions / Steps / Assertions as labelled lists with
+// per-step selector + intent_key + value shown inline as tag chips.
+function _esc(s) {
+  return String(s == null ? "" : s).replace(/</g, "&lt;");
+}
+function _tag(label, value) {
+  if (!value) return "";
+  return `<span style="display:inline-block; margin-right:6px; padding:1px 6px;
+                       border:1px solid var(--line); border-radius:4px;
+                       font-family:JetBrains Mono, Menlo, monospace; font-size:11px;
+                       color:var(--muted);">
+    <strong style="color:var(--fg);">${_esc(label)}:</strong> ${_esc(value)}
+  </span>`;
+}
+function _renderPreconditions(pre) {
+  if (!pre) return "";
+  // preconditions is a mixed list: strings AND objects like {key: val}.
+  const items = Array.isArray(pre) ? pre : Object.entries(pre).map(([k, v]) => `${k} = ${v}`);
+  if (!items.length) return `<em style="color:var(--muted); font-size:12px;">(none)</em>`;
+  return `<ul style="margin:4px 0 0 0; padding-left:22px;">${items.map(p => {
+    if (typeof p === "object" && p !== null) {
+      return `<li>${Object.entries(p).map(([k,v]) => `<code>${_esc(k)}</code> = ${_esc(v)}`).join(", ")}</li>`;
+    }
+    return `<li>${_esc(p)}</li>`;
+  }).join("")}</ul>`;
+}
+function _renderSteps(steps) {
+  if (!steps || !steps.length) return `<em style="color:var(--muted); font-size:12px;">(none)</em>`;
+  return `<ol style="margin:4px 0 0 0; padding-left:22px;">${steps.map(st => {
+    const action = _esc(st.action || "(action missing)");
+    const tags = [
+      _tag("selector", st.selector),
+      _tag("intent_key", st.intent_key),
+      _tag("value", st.value),
+    ].join("");
+    return `<li style="margin-bottom:6px;">
+      <div>${action}</div>
+      ${tags ? `<div style="margin-top:2px;">${tags}</div>` : ""}
+    </li>`;
+  }).join("")}</ol>`;
+}
+function _renderAssertions(assertions) {
+  if (!assertions || !assertions.length) return `<em style="color:var(--muted); font-size:12px;">(none)</em>`;
+  return `<ul style="margin:4px 0 0 0; padding-left:22px; list-style:none;">${assertions.map(a =>
+    `<li>✓ ${_esc(a)}</li>`
+  ).join("")}</ul>`;
+}
+
 function renderScenarios(output) {
   const scenarios = (output && output.scenarios) || [];
   const el = document.getElementById("scenarios");
@@ -59,17 +110,35 @@ function renderScenarios(output) {
   el.innerHTML = scenarios.map(sc => `
     <div class="card" style="margin:0; border-left:4px solid var(--blue);">
       <div style="display:flex; gap:10px; align-items:center;">
-        <span class="badge badge-info">${sc.id || ""}</span>
-        <span class="badge ${sc.type === 'NEGATIVE' ? 'badge-warn' : 'badge-success'}">${sc.type || "SMOKE"}</span>
-        <strong>${(sc.title||"").replace(/</g,"&lt;")}</strong>
+        <span class="badge badge-info">${_esc(sc.id || "")}</span>
+        <span class="badge ${sc.type === 'NEGATIVE' ? 'badge-warn' : 'badge-success'}">${_esc(sc.type || "SMOKE")}</span>
+        <strong>${_esc(sc.title || "")}</strong>
       </div>
-      <div style="font-size:12px; color:var(--muted); margin-top:6px;">
-        selectors: ${(sc.selectors_used||[]).map(s => `<code>${s.replace(/</g,"&lt;")}</code>`).join(", ")} ·
-        intent keys: ${(sc.intent_keys_used||[]).map(s => `<code>${s.replace(/</g,"&lt;")}</code>`).join(", ")}
+      <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+        ${(sc.steps||[]).length} step(s) · ${(sc.assertions||[]).length} assertion(s)
       </div>
-      <details style="margin-top:8px;">
-        <summary>${(sc.steps||[]).length} step(s) + ${(sc.assertions||[]).length} assertion(s)</summary>
-        <pre class="log" style="height:180px; margin-top:6px;">${JSON.stringify({preconditions: sc.preconditions, steps: sc.steps, assertions: sc.assertions}, null, 2)}</pre>
+
+      <div style="margin-top:12px;">
+        <div style="font-weight:600; margin-bottom:2px;">Preconditions</div>
+        ${_renderPreconditions(sc.preconditions)}
+      </div>
+
+      <div style="margin-top:10px;">
+        <div style="font-weight:600; margin-bottom:2px;">Steps</div>
+        ${_renderSteps(sc.steps)}
+      </div>
+
+      <div style="margin-top:10px;">
+        <div style="font-weight:600; margin-bottom:2px;">Assertions</div>
+        ${_renderAssertions(sc.assertions)}
+      </div>
+
+      <details style="margin-top:12px;">
+        <summary style="color:var(--muted); font-size:12px; cursor:pointer;">Show raw scenario JSON (debug)</summary>
+        <pre class="log" style="height:180px; margin-top:6px;">${_esc(JSON.stringify({
+          preconditions: sc.preconditions, steps: sc.steps, assertions: sc.assertions,
+          selectors_used: sc.selectors_used, intent_keys_used: sc.intent_keys_used,
+        }, null, 2))}</pre>
       </details>
     </div>
   `).join("");

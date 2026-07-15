@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from django.db import transaction
+
 from .change_detection_service import compare_snapshots
 from .models import (
     UIChangeLog,
@@ -24,10 +26,19 @@ from .models import (
 )
 
 
+@transaction.atomic
 def persist_snapshot(client, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Persist one route snapshot for `client`, returning `{status, snapshot_id, elements}`.
     Mirrors the response shape of `POST /ui-knowledge/sync/`.
+
+    Wrapped in @transaction.atomic (Phase 11.6): the previous implementation
+    did four sequential writes (page update, mark-old-noncurrent, create
+    snapshot, bulk_create elements) with no explicit boundary. Callers that
+    read back the inventory in the same request occasionally saw a partial
+    write (snapshot row present, UIElement rows not yet visible) and
+    incorrectly concluded ui_knowledge was empty. Atomic wrapping makes all
+    four writes commit together.
     """
     # ------------------------------------------------
     # PAGE (scoped per-tenant)

@@ -22,46 +22,8 @@
   <div id="iterations"><em style="color:var(--muted); font-size:13px;">(no execute output yet)</em></div>
 </div>
 
-<div class="card">
-  <details>
-    <summary><strong>Legacy Playwright runner (manual)</strong> · use for pre-Phase-6 jobs</summary>
-    <div style="margin-top:10px;">
-      <div class="row cols-3">
-        <div style="grid-column: span 3;">
-          <label>Spec (materialized Playwright specs for this client)</label>
-          <select id="spec-picker"></select>
-        </div>
-        <div>
-          <label>Grep (optional)</label>
-          <input id="grep" type="text" placeholder="test title fragment">
-        </div>
-        <div>
-          <label>Workers</label>
-          <select id="workers"><option>1</option><option>2</option><option>4</option></select>
-        </div>
-        <div>
-          <label>Browser</label>
-          <select id="headed">
-            <option value="false">Headless</option>
-            <option value="true">Headed</option>
-          </select>
-        </div>
-        <div>
-          <label>Base URL (overrides .env for this run)</label>
-          <input id="base-url" type="url" placeholder="https://www.carnival.com">
-        </div>
-        <div style="grid-column: span 2; display:flex; align-items:end; gap:10px;">
-          <button id="btn-run">▶ Run Playwright</button>
-          <span id="exec-status" class="badge badge-info">idle</span>
-        </div>
-      </div>
-      <div style="margin-top:10px;">
-        <h4 style="margin:0 0 6px;">Live Playwright log</h4>
-        <pre class="log" id="log">(no run yet)</pre>
-      </div>
-    </div>
-  </details>
-</div>
+{# Phase 11.5 — Legacy Playwright runner card removed. Only the Phase-6
+   Cucumber runner (above) is supported. #}
 
 {% endblock %}
 {% block scripts %}
@@ -422,67 +384,7 @@ $btnPush.onclick = async () => {
   }
 })();
 
-// -----------------------------------------------------------------------
-// Legacy Playwright runner — unchanged behavior, tucked into a details block
-// -----------------------------------------------------------------------
-const legacyStatus = document.getElementById("exec-status");
-const legacyLog = document.getElementById("log");
-const specPicker = document.getElementById("spec-picker");
-const baseUrlInput = document.getElementById("base-url");
-let legacyEs = null;
-function setLegacyStatus(msg, cls="badge-info") { legacyStatus.textContent = msg; legacyStatus.className = "badge " + cls; }
-function appendLegacy(line) { legacyLog.textContent += line + "\n"; }
-
-async function loadSpecs() {
-  specPicker.innerHTML = `<option value="">All materialized specs (this client)</option>`;
-  const r = await fetch("/test-generation/jobs/");
-  if (!r.ok) { return; }
-  const jobs = await r.json();
-  const materialized = jobs.filter(j => (j.status || j.job_status) === "MATERIALIZED");
-  for (const j of materialized) {
-    const detail = await fetch(`/test-generation/jobs/${j.job_id}/`).then(r => r.ok ? r.json() : null);
-    if (!detail) continue;
-    for (const art of (detail.materialized_manifest || detail.artifacts || [])) {
-      const p = art.path || art.relative_path;
-      if (p && p.endsWith(".spec.ts")) {
-        const opt = document.createElement("option");
-        opt.value = p;
-        opt.textContent = `${p}  (job ${j.job_id.slice(0,8)})`;
-        specPicker.appendChild(opt);
-      }
-    }
-  }
-}
-
-const jobDoc = JSON.parse(sessionStorage.getItem("xt.job_doc") || "null");
-if (jobDoc?.base_url) baseUrlInput.value = jobDoc.base_url;
-
-document.getElementById("btn-run").onclick = async () => {
-  setLegacyStatus("enqueuing…", "badge-info");
-  legacyLog.textContent = "";
-  const body = {
-    spec: specPicker.value,
-    grep: document.getElementById("grep").value,
-    workers: parseInt(document.getElementById("workers").value, 10),
-    headed: document.getElementById("headed").value === "true",
-    base_url: baseUrlInput.value.trim(),
-  };
-  const r = await fetch("/runners/execute/", {method:"POST", headers:H, body: JSON.stringify(body)});
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { setLegacyStatus("failed to enqueue","badge-fail"); appendLegacy(`[error] HTTP ${r.status}: ${JSON.stringify(j)}`); return; }
-  setLegacyStatus("running", "badge-success");
-  if (legacyEs) legacyEs.close();
-  legacyEs = new EventSource(`/runners/jobs/${j.id}/stream/`);
-  legacyEs.addEventListener("log",  e => appendLegacy(e.data));
-  legacyEs.addEventListener("done", e => {
-    appendLegacy(`\n--- ${e.data} ---`);
-    const ok = e.data.startsWith("SUCCESS");
-    setLegacyStatus(ok ? "success" : "failed", "badge " + (ok ? "badge-success" : "badge-fail"));
-    legacyEs.close();
-  });
-  legacyEs.addEventListener("error", () => legacyEs.close());
-};
-
-loadSpecs();
+// Phase 11.5 — Legacy Playwright runner block removed. The Phase-6 Cucumber
+// runner (above, uses async_task + SSE) is the only supported execute path.
 </script>
 {% endblock %}

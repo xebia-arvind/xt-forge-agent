@@ -565,14 +565,27 @@ class StageFeatureApproveView(_ClientScopedAPIView):
         notes = str(request.data.get("reviewer_notes") or "").strip()
         save_fields = ["stage", "stage_feature_output", "stage_history", "last_modified"]
 
-        if isinstance(edited, dict):
-            job.stage_feature_output = edited
+        # Phase 13.5 — clients that DON'T ship an `edited_output` payload
+        # (currently the PySide6 desktop app: its Feature panel is
+        # read-only) still expect the Feature Author's extracted fields
+        # to be promoted onto the job. Otherwise `job.base_url` sticks at
+        # the model default `http://localhost:3000` + `job.seed_urls=['/']`
+        # and every downstream stage (Manual → Plan → Artifacts) runs
+        # against the wrong URL. Fall back to `stage_feature_output`
+        # when the client didn't supply an edit.
+        effective = edited if isinstance(edited, dict) else (job.stage_feature_output or {})
+
+        if isinstance(effective, dict) and effective:
+            # Persist edits (if any). When the client didn't send an edit,
+            # this is a no-op because stage_feature_output already holds it.
+            if isinstance(edited, dict):
+                job.stage_feature_output = edited
             # The Feature Review "Seed URLs (comma-separated)" field is the
             # single source of truth for BOTH the app-under-test base URL and
             # the relative paths the tests navigate. Split absolute vs relative
             # here so downstream stages (Manual Tests, Plan, Artifacts, Execute)
             # see the operator's intent instead of the localhost fallback.
-            base_url, seed_urls = _split_seed_urls(edited.get("seed_urls") or [])
+            base_url, seed_urls = _split_seed_urls(effective.get("seed_urls") or [])
             if base_url:
                 job.base_url = base_url
                 save_fields.append("base_url")
@@ -581,9 +594,9 @@ class StageFeatureApproveView(_ClientScopedAPIView):
                 save_fields.append("seed_urls")
             # Preconditions (HTTP Basic Auth, seed year, etc.) — reviewer can
             # override anything the Feature Author extracted from the Jira text.
-            edited_pre = edited.get("preconditions")
-            if isinstance(edited_pre, dict):
-                job.preconditions = edited_pre
+            eff_pre = effective.get("preconditions")
+            if isinstance(eff_pre, dict):
+                job.preconditions = eff_pre
                 save_fields.append("preconditions")
 
         history = list(job.stage_history or [])
@@ -1891,6 +1904,25 @@ class StageArtifactsRunView(_ClientScopedAPIView):
         if require_ui and job.base_url:
             from .agents import _build_ground_truth_inventory
             inventory = _build_ground_truth_inventory(job)
+            # Phase 11.6 — first-run race guard. `ensure_snapshots_fresh`
+            # above may have JUST written snapshot + element rows. On some
+            # connection isolation combos (autocommit-per-statement on
+            # Postgres) the inventory query above sees them stale. If we
+            # captured something new but the inventory is empty, sleep 500ms
+            # and re-query once before failing. Bounded — one retry, max 1s
+            # added latency in the false-negative case.
+            if (
+                not inventory.get("per_url")
+                and (capture_report or {}).get("captured", 0) > 0
+            ):
+                import time
+                logger.info(
+                    "ui_knowledge inventory empty after capture (captured=%d). "
+                    "Sleeping 500ms and retrying visibility check.",
+                    capture_report.get("captured", 0),
+                )
+                time.sleep(0.5)
+                inventory = _build_ground_truth_inventory(job)
             if not inventory.get("per_url"):
                 return Response(
                     {

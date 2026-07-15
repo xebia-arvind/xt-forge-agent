@@ -92,9 +92,11 @@
     <aside class="side">
       <h2>🛡️ XT-Forge</h2>
       <nav>
-        {# Phase 6.4 — Analytics promoted to top; Jobs is the landing page.
-           Config / Generate / Healer views still exist and are directly
-           navigable via URL; only their sidebar entries are hidden. #}
+        {% comment %}
+          Phase 6.4 — Analytics promoted to top; Jobs is the landing page.
+          Config / Generate / Healer views still exist and are directly
+          navigable via URL; only their sidebar entries are hidden.
+        {% endcomment %}
         <div class="group">Analytics</div>
         <a href="{% url 'panel_jobs' %}"      class="{% if active_panel == 'jobs' %}active{% endif %}">📈 Jobs</a>
 

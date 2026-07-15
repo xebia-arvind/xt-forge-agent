@@ -82,56 +82,51 @@ function renderIssues(rows) {
       <td>${(iss.fields?.summary||"").replace(/</g,"&lt;")}</td>
       <td>${iss.fields?.status?.name||""}</td>
       <td>${iss.fields?.priority?.name||""}</td>
-      <td style="display:flex; gap:6px;">
-        <button data-key="${iss.key}" data-mode="pipeline">🧩 Start pipeline →</button>
-        <button data-key="${iss.key}" data-mode="legacy" class="secondary">Legacy config →</button>
+      <td>
+        <button data-key="${iss.key}">🧩 Start pipeline →</button>
       </td>
     </tr>`).join("");
-  // Attach handlers per row.
+  // Attach handlers per row. Only pipeline flow now — Legacy config removed.
   $body().querySelectorAll("button[data-key]").forEach(b => b.onclick = async () => {
     const key = b.dataset.key;
     const row = rows.find(r => r.key === key) || {};
-    // Both flows stash the Jira context so panels can render the summary/description.
+    // Stash the Jira context so downstream panels can render the summary/description.
     sessionStorage.setItem("xt.selected_jira", key);
     sessionStorage.setItem("xt.selected_jira_summary", row.fields?.summary || "");
     sessionStorage.setItem("xt.selected_jira_description", JSON.stringify(row.fields?.description || null));
 
-    if (b.dataset.mode === "pipeline") {
-      // Phase 6 flow: create a pipeline job now, redirect to Feature Review.
-      b.disabled = true; b.textContent = "creating…";
-      let r, bodyText, j = {};
-      try {
-        r = await fetch("/test-generation/pipeline-jobs/", {
-          method: "POST",
-          headers: H,
-          body: JSON.stringify({
-            jira_issue_key: key,
-            feature_name: row.fields?.summary || key,
-          }),
-        });
-        // Snapshot the raw body once. If the response is text/html (Django
-        // debug page), still show a truncated head so the operator can see
-        // what really failed instead of a bare `HTTP 500`.
-        bodyText = await r.text();
-        try { j = bodyText ? JSON.parse(bodyText) : {}; } catch { j = {}; }
-      } catch (netErr) {
-        alert("Network error while starting pipeline: " + netErr.message);
-        b.disabled = false; b.textContent = "🧩 Start pipeline →";
-        return;
-      }
-      console.log("[pipeline-jobs]", r.status, j.error ? j : bodyText);
-      if (!r.ok) {
-        const reason = j.error || j.detail || (bodyText || "").slice(0, 400) || `HTTP ${r.status}`;
-        alert("Failed to start pipeline: " + reason);
-        b.disabled = false; b.textContent = "🧩 Start pipeline →";
-        return;
-      }
-      sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
-      location.href = "{% url 'panel_feature_review' %}";
-    } else {
-      // Legacy single-shot flow: fall through to Config panel.
-      location.href = "{% url 'panel_config' %}";
+    b.disabled = true; b.textContent = "creating…";
+    let r, bodyText, j = {};
+    try {
+      r = await fetch("/test-generation/pipeline-jobs/", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({
+          jira_issue_key: key,
+          feature_name: row.fields?.summary || key,
+        }),
+      });
+      // Snapshot the raw body once. If the response is text/html (Django
+      // debug page), still show a truncated head so the operator can see
+      // what really failed instead of a bare `HTTP 500`.
+      bodyText = await r.text();
+      try { j = bodyText ? JSON.parse(bodyText) : {}; } catch { j = {}; }
+    } catch (netErr) {
+      alert("Network error while starting pipeline: " + netErr.message);
+      b.disabled = false; b.textContent = "🧩 Start pipeline →";
+      return;
     }
+    console.log("[pipeline-jobs]", r.status, j.error ? j : bodyText);
+    if (!r.ok) {
+      const reason = j.error || j.detail || (bodyText || "").slice(0, 400) || `HTTP ${r.status}`;
+      alert("Failed to start pipeline: " + reason);
+      b.disabled = false; b.textContent = "🧩 Start pipeline →";
+      return;
+    }
+    sessionStorage.setItem("xt.pipeline_job_id", j.job_id);
+    // Phase 11.3 — deep-link to Feature panel with the fresh job id in the
+    // querystring so the dropdown lands pre-selected without a manual reload.
+    location.href = "{% url 'panel_feature_review' %}?job=" + encodeURIComponent(j.job_id);
   });
 }
 

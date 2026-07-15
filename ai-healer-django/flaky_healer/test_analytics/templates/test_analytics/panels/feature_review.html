@@ -57,8 +57,10 @@
 </div>
 
 <div class="card">
-  <h3 style="margin-top:0">Raw agent output</h3>
-  <pre id="raw-json" class="log" style="height:200px">(no output yet)</pre>
+  <details>
+    <summary style="color:var(--muted); font-size:12px; cursor:pointer;">Show raw agent output (debug)</summary>
+    <pre id="raw-json" class="log" style="height:200px; margin-top:8px;">(no output yet)</pre>
+  </details>
 </div>
 
 {% endblock %}
@@ -193,11 +195,28 @@ $btnApprove.onclick = async () => {
   setTimeout(() => { location.href = "{% url 'panel_manual_tests_review' %}"; }, 700);
 };
 
+// Phase 11.3 — refresh the job dropdown whenever the tab regains focus so a
+// pipeline started in another tab (or the Worklist's redirect) shows up
+// without a manual reload.
+window.addEventListener("focus", () => { loadJobList(); });
+
 (async () => {
   const jobs = await loadJobList();
+  // Priority order for auto-selecting a job in the dropdown:
+  //   1. ?job=<uuid> in the URL   (Worklist redirect after Start pipeline)
+  //   2. xt.pipeline_job_id       (previously-selected job in this session)
+  //   3. jobs[0]                  (most recent job the tenant has)
+  const qsJob = new URLSearchParams(location.search).get("job");
   const stored = sessionStorage.getItem("xt.pipeline_job_id");
-  const target = stored && jobs.find(j => j.job_id === stored) ? stored : (jobs[0] && jobs[0].job_id) || "";
-  if (target) { $picker.value = target; await loadJob(target); }
+  const candidate = (qsJob && jobs.find(j => j.job_id === qsJob) && qsJob)
+                 || (stored && jobs.find(j => j.job_id === stored) && stored)
+                 || (jobs[0] && jobs[0].job_id)
+                 || "";
+  if (candidate) {
+    $picker.value = candidate;
+    sessionStorage.setItem("xt.pipeline_job_id", candidate);
+    await loadJob(candidate);
+  }
 })();
 </script>
 {% endblock %}

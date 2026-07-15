@@ -463,12 +463,32 @@ def _build_plan_prompt(feature: Dict[str, Any], manual_tests: Dict[str, Any],
     #     the LLM ever emits page-objects (Phase 9.7), so this branch acts
     #     as an "operator, run ui_knowledge sync" signal, not a silent guess.
     if has_ground_truth:
+        # Phase 13 (revised) — GPT-4o was seeing this rule alongside a 20+ KB
+        # ground-truth table and defaulting to `selector: ""` for every step
+        # (the "closest match or omit" escape). Tightened here to forbid
+        # empty selectors entirely and give the model a deterministic
+        # picking recipe.
         selector_rule = (
-            "- Every selector in `step.selector` MUST be one of the strings\n"
-            "  from the GROUND-TRUTH LOCATORS table below (copy verbatim).\n"
-            "  Do NOT invent selectors like '#login-button' or '#usernameInput'\n"
-            "  — the pipeline verifies every selector against the live DOM and\n"
-            "  rejects hallucinated ones.\n"
+            "- Every selector in `step.selector` MUST be a NON-EMPTY string\n"
+            "  copied VERBATIM from the GROUND-TRUTH LOCATORS table below.\n"
+            "  You MUST NOT emit `selector: \"\"` for any step. Empty\n"
+            "  strings are a bug — the operator sees `(missing — patch me)`\n"
+            "  and the pipeline halts at the next stage.\n"
+            "  Picking recipe (apply in order):\n"
+            "    1. Match by test_id if the action names a specific control\n"
+            "       (e.g. \"click login button\" → row with test_id~=login).\n"
+            "    2. Otherwise match by role + text (e.g. \"select year 1990\"\n"
+            "       → row with role=combobox / textbox whose text contains\n"
+            "       \"year\" or \"birth\").\n"
+            "    3. Otherwise match by tag + text (e.g. \"click user icon\"\n"
+            "       → row with tag=a/button whose text mentions \"account\",\n"
+            "       \"user\", \"login\", or similar).\n"
+            "    4. If nothing feels perfect, still PICK the closest available\n"
+            "       row and add a note in `notes` explaining the fuzzy match.\n"
+            "       Never leave the selector empty.\n"
+            "  Do NOT invent selectors like '#login-button' — the pipeline\n"
+            "  verifies every selector against the live DOM and rejects\n"
+            "  hallucinated ones.\n"
         )
     elif bool(selector_map):
         selector_rule = (
@@ -888,12 +908,15 @@ def _format_ground_truth_block(inventory: Dict[str, Any]) -> str:
     if not per_url:
         return ""
     lines: List[str] = [
-        "GROUND-TRUTH LOCATORS (captured from the live DOM at Artifact-stage time):",
-        "These are the ONLY selectors that exist on the listed pages. Every locator you",
-        "write in a page-object file MUST be one of these strings, verbatim. Do NOT",
-        "invent new selectors — the pipeline will reject them. If no listed row fits a",
-        "step, add a short entry to `notes` explaining what's missing and pick the",
-        "closest match (or omit the step from the page object).",
+        "GROUND-TRUTH LOCATORS (captured from the live DOM):",
+        "These are the ONLY selectors that exist on the listed pages. Every",
+        "locator you emit MUST be one of these strings, verbatim, from the",
+        "appropriate URL's block. Do NOT invent new selectors and do NOT",
+        "emit empty strings — the pipeline rejects both. If no listed row",
+        "seems like a perfect fit, PICK the closest match (test_id, then role,",
+        "then tag+text) and add a short note in `notes` explaining the",
+        "fuzzy match. Empty selectors are never acceptable when this table",
+        "is present.",
         "",
     ]
     for url_path, rows in per_url.items():
