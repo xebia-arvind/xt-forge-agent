@@ -46,10 +46,16 @@ COPY . /app/
 RUN npx --yes playwright install chromium
 
 # --- collectstatic at build time; env values below are build-only ---
+# DATABASE_URL points at a dummy sqlite so Django's DATABASES resolves to
+# a driver that IS installed. Without it, settings.py falls back to the
+# MySQL block and Django tries to import mysqlclient (which we removed).
+# collectstatic never opens a real DB connection — it only inspects
+# staticfiles apps — so a nonexistent SQLite file is fine.
 WORKDIR /app/ai-healer-django/flaky_healer
 RUN DJANGO_SECRET_KEY=build-only \
     ALLOWED_HOSTS=* \
     DEBUG=true \
+    DATABASE_URL="sqlite:////tmp/build.sqlite3" \
     python manage.py collectstatic --noinput
 
 # Default command: gunicorn web server. The worker service overrides via
