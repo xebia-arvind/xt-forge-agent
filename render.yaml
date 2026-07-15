@@ -25,7 +25,7 @@ services:
   # ------ Web (Django + gunicorn) ------
   - type: web
     name: xt-forge-web
-    env: docker
+    runtime: docker
     plan: free
     dockerfilePath: ./ai-healer-django/Dockerfile
     dockerContext: .
@@ -84,10 +84,13 @@ services:
         value: "true"
 
   # ------ Worker (django-q2 qcluster) ------
+  # Background Worker services are not on Render's free tier — Starter is
+  # the entry-level plan at $7/mo. Required so async_task enqueues from web
+  # requests get picked up out-of-process.
   - type: worker
     name: xt-forge-worker
-    env: docker
-    plan: free
+    runtime: docker
+    plan: starter
     dockerfilePath: ./ai-healer-django/Dockerfile
     dockerContext: .
     autoDeploy: true

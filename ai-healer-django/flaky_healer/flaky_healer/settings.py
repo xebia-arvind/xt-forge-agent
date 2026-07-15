@@ -377,7 +377,7 @@ except OSError:
 # Every agent in `test_generation` routes through `llm_backends.py`. Ollama has
 # been removed; OpenAI is the only backend. If OPENAI_API_KEY is unset the
 # pipeline halts with a clear error at the first LLM call.
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 # Tool-use kill-switch. Default "on" so the Root-Cause Fixer runs in
 # tool-calling mode (Claude-Code-style loop over Playwright MCP + artifact
 # tools). Set to "off" to revert to the legacy single-shot prompt path.
