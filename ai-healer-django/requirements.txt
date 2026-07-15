@@ -6,7 +6,10 @@ django-colorfield==0.14.0
 django-import-export==4.4.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
-mysqlclient==2.2.7
+# mysqlclient removed from base requirements (Phase 10): it needs MySQL C
+# headers that aren't in the Render Docker image, and Render deploys use
+# Postgres via psycopg2-binary. Local Mac dev that wants MySQL can
+# `pip install mysqlclient==2.2.7` into its own venv separately.
 pillow==12.1.0
 PyJWT==2.10.1
 python-slugify==8.0.4
@@ -37,8 +40,10 @@ requests==2.32.3
 openai>=1.50
 
 # Phase 10 — Render deployment: WSGI server, Postgres driver, DB URL parser,
-# static-file middleware. mysqlclient stays so local dev keeps working; the
-# DATABASES block picks the driver by whether DATABASE_URL is set.
+# static-file middleware. mysqlclient was moved OUT of the base requirements
+# because it needs MySQL C headers the Render image doesn't ship; the
+# DATABASES block reads DATABASE_URL (Postgres) in prod, MySQL block only
+# activates when DATABASE_URL is unset (local dev).
 gunicorn>=22.0
 psycopg2-binary>=2.9
 dj-database-url>=2.2
